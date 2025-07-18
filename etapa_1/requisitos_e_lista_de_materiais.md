@@ -5,22 +5,22 @@
 ### 🔧 Kit Principal
 - [x] **BitDogLab Kit** (contém Raspberry Pi Pico W)
   - Raspberry Pi Pico W (com Wi-Fi)
-  - Sensor ultrassônico HC-SR04
-  - Motor driver (L298N ou similar)
-  - Roda com motor DC (x2)
-  - Roda livre (caster wheel)
-  - Protoboard
-  - Jumpers diversos
+  - Protoboard e jumpers diversos
 
 ### 🧩 Componentes Adicionais
-- [x] **Câmera OV7670 (VGA)** — captura de imagem para detecção de pessoas
-- [x] **Módulo GPS (ex: NEO-6M)** — localização e rastreamento geográfico
-- [x] **Sensor de Toque Capacitivo (ex: TTP223)** — para detectar quando a pessoa toca na mala
+- [x] **Ponte H TB6612FNG** — controle de dois motores DC
+- [x] **Motores DC com rodas** (x2) + **roda livre**
+- [x] **Sensor ultrassônico HC-SR04** — para desvio de obstáculos
+- [x] **Sensor de Toque Capacitivo (TTP223)** — para parada ao toque
+- [x] **Câmera OV7670 (VGA)** — para visão computacional (TinyML)
+- [x] **Módulo GPS (ex: NEO-6M)** — rastreamento geográfico
+- [x] **Giroscópio (MPU-6050 ou similar)** — equilíbrio e orientação
+- [x] **Amplificador de áudio MAX98357** — reprodução de som via I2S
+- [x] **Micro alto-falante** — saída de áudio conectada ao MAX98357
+- [x] LEDs para status do sistema
 - [x] **Bateria Li-ion 7.4V ou Power Bank**
 - [x] Conversores de tensão (5V e 3.3V)
-- [x] Buzzer (alarme sonoro)
-- [x] LEDs indicadores (status do sistema)
-- [x] Estrutura 3D impressa no formato de uma pequena mala
+- [x] **Estrutura impressa em 3D** no formato de uma pequena mala
 
 ---
 
@@ -31,45 +31,55 @@
 - **Editor**: Sublime Text
 - **SDK**: Raspberry Pi Pico C SDK
 - **RTOS**: FreeRTOS
-- **TinyML**: Para detecção de obstáculos e identificação da pessoa
-- **Câmera OV7670**: Comunicação via PIO ou SPI
+- **TinyML**: Para detecção embarcada
+- **Câmera OV7670**: Comunicação via PIO/SPI
 - **GPS**: Comunicação via UART
-- **Sensor de Toque**: Entrada digital (interrupção ou polling)
+- **Giroscópio**: Comunicação via I2C
+- **Sensor de toque**: GPIO com interrupção
+- **Amplificador MAX98357**: I2S (áudio digital)
 - **Compilação**: CMake + `arm-none-eabi-gcc`
 - **Ferramentas**:
   - `picotool` (upload via USB)
-  - `openocd` (debug opcional)
+  - `openocd` (debug SWD opcional)
 
 ---
 
 ## ✅ Requisitos Funcionais
 
-1. **Detectar a pessoa** usando câmera OV7670 e TinyML embarcado.
-2. **Seguir automaticamente** a pessoa detectada com controle de motores.
-3. **Evitar obstáculos** com sensores ultrassônicos e visão.
-4. **Parar imediatamente ao toque** usando sensor capacitivo (ex: quando a pessoa segura a mala).
-5. **Emitir sinais visuais e sonoros** para indicar o estado do sistema.
-6. **Obter localização GPS** para rastreamento ou futuras extensões.
-7. **Executar tarefas paralelas com FreeRTOS** (sensores, motores, visão, interface).
+1. **Detectar e seguir uma pessoa** com TinyML (usando câmera OV7670).
+2. **Evitar obstáculos** com sensores e visão computacional.
+3. **Parar ao ser tocada** (sensor capacitivo).
+4. **Emitir sons de status** via amplificador MAX98357 e alto-falante.
+5. **Enviar posição GPS** ao dono por HTTP ou MQTT.
+6. **Corrigir deslocamento/orientação** com giroscópio.
+7. **Indicar estados com LEDs** (seguindo, parado, erro, etc.).
+8. **Executar tarefas em tempo real** com FreeRTOS (visão, sensores, áudio, comunicação, controle motor).
 
 ---
 
 ## ❌ Requisitos Não Funcionais
 
-1. **Portabilidade**: Estrutura 3D compacta e funcional no formato de mala.
-2. **Baixo consumo energético**: Projetado para operar por pelo menos 1 hora.
-3. **Modularidade do código**: Separação clara entre sensores, controle, visão e sistema.
-4. **Resiliência**: Capaz de lidar com falhas ou perda temporária do alvo.
-5. **Segurança operacional**: Parada imediata com toque e em situações críticas.
-6. **Estética**: Impressão 3D com acabamento limpo e formato prático.
-7. **Facilidade de montagem**: Estrutura planejada para encaixe dos componentes eletrônicos.
+1. **Formato físico portátil**: estrutura 3D compacta em forma de mala.
+2. **Autonomia de no mínimo 1 hora de uso** com bateria.
+3. **Alta segurança operacional**, parando em falhas ou obstáculos.
+4. **Baixo custo e componentes reutilizáveis**.
+5. **Arquitetura modular** de código e hardware.
+6. **Qualidade sonora básica** para alertas (áudio digital via I2S).
+7. **Fácil manutenção** e expansão futura (ex: integração com app).
 
 ---
 
-## 📌 Considerações Finais
+## 📌 Considerações Técnicas
 
-- O uso do **sensor de toque capacitivo** substitui a necessidade de botões físicos e torna a interação mais intuitiva.
-- A **estrutura 3D** pode ser projetada em CAD (ex: FreeCAD ou Fusion 360) e impressa em PLA ou ABS.
-- A arquitetura do software será baseada em FreeRTOS, com tarefas separadas para visão, motores, sensores e controle geral.
-- A TinyML será responsável por classificar imagens em tempo real para detecção de humanos/obstáculos.
+- O **microfone já incluso no kit BitDogLab** pode ser usado futuramente para comandos ou ambiente.
+- O **alto-falante** permite reprodução clara de alertas sonoros via **MAX98357** (áudio digital I2S).
+- Os dados GPS são transmitidos ao dono via HTTP/MQTT (por Wi-Fi).
+- A TinyML será usada para detectar a pessoa a ser seguida e obstáculos, com modelo treinado externamente.
+- A estrutura do software será baseada em FreeRTOS, com tasks separadas para:
+  - Visão (TinyML)
+  - Controle motor
+  - Sensores (toque, distância, giroscópio)
+  - Comunicação (HTTP/MQTT)
+  - Áudio
+  - LED/status
 
