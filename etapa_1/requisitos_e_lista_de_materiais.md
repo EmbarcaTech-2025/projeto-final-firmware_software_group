@@ -1,85 +1,102 @@
-# Projeto: Mala Autônoma Seguidora
+# Projeto: **Mala Autônoma Seguidora com Visão Computacional e Comunicação Remota**
 
-## 🧰 Materiais Necessários
+## 🎯 Problema a Ser Resolvido
 
-### 🔧 Kit Principal
-- [x] **BitDogLab Kit** (contém Raspberry Pi Pico W)
-  - Raspberry Pi Pico W (com Wi-Fi)
-  - Protoboard e jumpers diversos
+Em aeroportos, eventos e ambientes urbanos, pessoas frequentemente enfrentam dificuldades ao transportar bagagens por longas distâncias ou em terrenos irregulares. Isso se agrava para idosos, pessoas com deficiência ou quando há múltiplas malas envolvidas.
 
-### 🧩 Componentes Adicionais
-- [x] **Ponte H TB6612FNG** — controle de dois motores DC
-- [x] **Motores DC com rodas** (x2) + **roda livre**
-- [x] **Sensor ultrassônico HC-SR04** — para desvio de obstáculos
-- [x] **Sensor de Toque Capacitivo (TTP223)** — para parada ao toque
-- [x] **Câmera OV7670 (VGA)** — para visão computacional (TinyML)
-- [x] **Módulo GPS (ex: NEO-6M)** — rastreamento geográfico
-- [x] **Giroscópio (MPU-6050 ou similar)** — equilíbrio e orientação
-- [x] **Amplificador de áudio MAX98357** — reprodução de som via I2S
-- [x] **Micro alto-falante** — saída de áudio conectada ao MAX98357
-- [x] LEDs para status do sistema
-- [x] **Bateria Li-ion 7.4V ou Power Bank**
-- [x] Conversores de tensão (5V e 3.3V)
-- [x] **Estrutura impressa em 3D** no formato de uma pequena mala
-
----
-
-## 💻 Ambiente de Desenvolvimento
-
-- **Linguagem**: C
-- **Sistema Operacional**: Linux
-- **Editor**: Sublime Text
-- **SDK**: Raspberry Pi Pico C SDK
-- **RTOS**: FreeRTOS
-- **TinyML**: Para detecção embarcada
-- **Câmera OV7670**: Comunicação via PIO/SPI
-- **GPS**: Comunicação via UART
-- **Giroscópio**: Comunicação via I2C
-- **Sensor de toque**: GPIO com interrupção
-- **Amplificador MAX98357**: I2S (áudio digital)
-- **Compilação**: CMake + `arm-none-eabi-gcc`
-- **Ferramentas**:
-  - `picotool` (upload via USB)
-  - `openocd` (debug SWD opcional)
+**Objetivo**: Desenvolver uma mala autônoma que **segue seu dono de forma segura e inteligente**, desviando de obstáculos, respondendo a comandos por toque e permitindo rastreamento remoto via GPS.
 
 ---
 
 ## ✅ Requisitos Funcionais
 
-1. **Detectar e seguir uma pessoa** com TinyML (usando câmera OV7670).
-2. **Evitar obstáculos** com sensores e visão computacional.
-3. **Parar ao ser tocada** (sensor capacitivo).
-4. **Emitir sons de status** via amplificador MAX98357 e alto-falante.
-5. **Enviar posição GPS** ao dono por HTTP ou MQTT.
-6. **Corrigir deslocamento/orientação** com giroscópio.
-7. **Indicar estados com LEDs** (seguindo, parado, erro, etc.).
-8. **Executar tarefas em tempo real** com FreeRTOS (visão, sensores, áudio, comunicação, controle motor).
+1. **Seguimento autônomo** do usuário utilizando **TinyML** e câmera OV7670.
+2. **Desvio de obstáculos** com sensores ultrassônicos e visão computacional.
+3. **Parada imediata** ao toque humano (sensor capacitivo).
+4. **Reprodução de alertas sonoros** (por exemplo, quando parada, em erro ou ao localizar o usuário).
+5. **Envio periódico da posição GPS** ao dono via Wi-Fi (HTTP ou MQTT).
+6. **Correção de trajetória** usando giroscópio.
+7. **Indicação do estado do sistema** por meio de LEDs (seguindo, parado, erro, etc.).
+8. **Execução concorrente** com tarefas distribuídas em tempo real utilizando **FreeRTOS**.
 
 ---
 
 ## ❌ Requisitos Não Funcionais
 
-1. **Formato físico portátil**: estrutura 3D compacta em forma de mala.
-2. **Autonomia de no mínimo 1 hora de uso** com bateria.
-3. **Alta segurança operacional**, parando em falhas ou obstáculos.
-4. **Baixo custo e componentes reutilizáveis**.
-5. **Arquitetura modular** de código e hardware.
-6. **Qualidade sonora básica** para alertas (áudio digital via I2S).
-7. **Fácil manutenção** e expansão futura (ex: integração com app).
+1. **Formato portátil e leve**, com estrutura em 3D no estilo mala.
+2. **Autonomia mínima de 1 hora**, com bateria recarregável.
+3. **Alta segurança operacional**, com comportamento previsível e interrupção segura em caso de falha.
+4. **Custo reduzido**, utilizando componentes acessíveis e reutilizáveis.
+5. **Arquitetura modular** de hardware e software, facilitando manutenção e expansão futura (ex: controle por app).
+6. **Qualidade de som suficiente** para alertas claros (via I2S digital).
+7. **Interface amigável** com configuração simples e manutenção fácil.
 
 ---
 
-## 📌 Considerações Técnicas
+## 🧰 Lista de Materiais Necessários
 
-- O **microfone já incluso no kit BitDogLab** pode ser usado futuramente para comandos ou ambiente.
-- O **alto-falante** permite reprodução clara de alertas sonoros via **MAX98357** (áudio digital I2S).
-- Os dados GPS são transmitidos ao dono via HTTP/MQTT (por Wi-Fi).
-- A TinyML será usada para detectar a pessoa a ser seguida e obstáculos, com modelo treinado externamente.
-- A estrutura do software será baseada em FreeRTOS, com tasks separadas para:
-  - Visão (TinyML)
-  - Controle motor
-  - Sensores (toque, distância, giroscópio)
-  - Comunicação (HTTP/MQTT)
-  - Áudio
-  - LED/status
+### 🧩 Kit Base
 
+* ✅ **BitDogLab Kit**
+
+  * Raspberry Pi Pico W (com Wi-Fi integrado)
+  * Protoboard, jumpers e microfone embutido
+
+### ⚙️ Eletrônicos e Sensores
+
+* ✅ **Ponte H TB6612FNG** – controle de dois motores DC
+* ✅ **Motores DC + rodas** (x2) e **roda livre**
+* ✅ **Sensor ultrassônico HC-SR04** – detecção de obstáculos
+* ✅ **Sensor de toque capacitivo (TTP223)** – parada ao toque
+* ✅ **Câmera OV7670** – visão computacional (TinyML embarcado)
+* ✅ **Módulo GPS (ex: NEO-6M)** – rastreamento geográfico
+* ✅ **Giroscópio (MPU-6050 ou compatível)** – orientação e equilíbrio
+* ✅ **Amplificador MAX98357 (I2S)** – saída de áudio digital
+* ✅ **Micro alto-falante** – emissão de sons de status
+* ✅ **LEDs RGB ou simples** – indicadores visuais de status
+
+### 🔋 Energia e Estrutura
+
+* ✅ **Bateria Li-ion 7.4V** ou **Power Bank USB-C**
+* ✅ **Conversores de tensão** (5V e 3.3V, conforme periféricos)
+* ✅ **Estrutura física 3D** no formato de uma mala pequena (impressão 3D)
+
+---
+
+## 💻 Ambiente e Tecnologias
+
+* **Linguagem de Programação**: C
+* **Plataforma de Desenvolvimento**: Linux + Sublime Text
+* **SDK**: Raspberry Pi Pico C SDK
+* **RTOS**: FreeRTOS
+* **Compilador**: `arm-none-eabi-gcc` + CMake
+* **Ferramentas**:
+
+  * `picotool` (upload USB)
+  * `openocd` (debug SWD, opcional)
+
+### 📡 Comunicação dos Módulos
+
+| Módulo                | Interface          |
+| --------------------- | ------------------ |
+| Câmera OV7670         | SPI / PIO          |
+| GPS (NEO-6M)          | UART               |
+| Giroscópio (MPU6050)  | I2C                |
+| Sensor de toque       | GPIO + interrupção |
+| Amplificador MAX98357 | I2S                |
+
+---
+
+## 📌 Considerações Finais
+
+* O microfone do kit pode ser utilizado em versões futuras para comandos por voz ou detecção de ambiente.
+* O projeto se baseia em princípios de modularidade e eficiência energética.
+* A TinyML será usada com modelos previamente treinados e otimizados para o Raspberry Pi Pico W.
+* O sistema será multitarefa com FreeRTOS, com tasks independentes para:
+
+  * Visão (seguimento)
+  * Controle motor
+  * Leitura de sensores
+  * Comunicação (HTTP/MQTT)
+  * Reprodução de áudio
+  * LED/status
