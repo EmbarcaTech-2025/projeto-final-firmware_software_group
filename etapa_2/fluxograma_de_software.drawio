@@ -1,0 +1,117 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" version="28.0.9">
+  <diagram name="Page-1" id="z10R4f0QPwopyZheoNrY">
+    <mxGraphModel dx="730" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="aLyZ_WHZh9_vQ4kXZll--1" target="KpOTo13zaKrY_ztQVDBn-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aLyZ_WHZh9_vQ4kXZll--1" value="Inicio" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="290" y="40" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-2" target="KpOTo13zaKrY_ztQVDBn-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-2" value="Incluiras bibliotecas necessarias;&lt;div&gt;Configura UART(interface com o usuario)&lt;/div&gt;&lt;div&gt;&lt;div&gt;Configura pinos dos LEDS e Butoes&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Configura UART para modulo GPS&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Configura PWM para buzzer ou mini-autofalantes&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;Configura PWM para motores DC&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Configura I2C para acelerometro, medidor de distancia, amplificador de audio&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Configura interrupcao do timer ou escalonador(RTOS)&lt;/span&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="160" width="380" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-4" target="KpOTo13zaKrY_ztQVDBn-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-4" value="Interrupcao do Timer ou escalonador(RTOS)" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="245" y="340" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="310" as="targetPoint" />
+            <mxPoint x="490" y="1780" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="560" y="1780" />
+              <mxPoint x="560" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-9" value="Enviar dados usando UART&amp;nbsp;" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" vertex="1" parent="1">
+          <mxGeometry x="259" y="1740" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-11" target="KpOTo13zaKrY_ztQVDBn-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-11" value="Obtem medidas do acelerometro/giroscopio" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="284" y="1380" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-13" target="KpOTo13zaKrY_ztQVDBn-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-13" value="obter sinal de PWM apartir do controle PID" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="284" y="1500" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-15" target="KpOTo13zaKrY_ztQVDBn-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-15" value="Controlar torque e direcao dos motores usando o PWM" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="294" y="1630" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-20" target="KpOTo13zaKrY_ztQVDBn-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-20" value="Obtem identidade da pessoa pela camera enviada pela outra rasbperry pi pico w por MQTT" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="285" y="470" width="130" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-22" target="KpOTo13zaKrY_ztQVDBn-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-22" value="Obter distancia dos sensores a laser e ultrasonicos" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="610" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-24" target="KpOTo13zaKrY_ztQVDBn-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-24" value="Obter posicao do modulo GPS" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="730" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-31" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-28" target="KpOTo13zaKrY_ztQVDBn-30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-28" value="Obter posicao do gps do celular do dono da mala por mqtt&amp;nbsp;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="289" y="860" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-30" target="KpOTo13zaKrY_ztQVDBn-32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-30" value="Calcular angulo entre dono da mala e da mala pelos valores dos GPSs" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="289" y="990" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-32" target="KpOTo13zaKrY_ztQVDBn-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-32" value="Usando todas as informacoes ate o momento obter o vetor de movimento da mala" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="289" y="1140" width="121" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-37" value="sim" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="355" y="420" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-38" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="350" y="440" as="sourcePoint" />
+            <mxPoint x="350" y="310" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="200" y="440" />
+              <mxPoint x="200" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-39" value="Nao" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="140" y="340" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="KpOTo13zaKrY_ztQVDBn-40" target="KpOTo13zaKrY_ztQVDBn-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KpOTo13zaKrY_ztQVDBn-40" value="se distancia acima de valor maximo emtir sinais sonores e luminosos" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="289" y="1250" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

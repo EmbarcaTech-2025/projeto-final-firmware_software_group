@@ -58,6 +58,7 @@ Os blocos funcionais representam os módulos principais do sistema, divididos em
 ## Fluxograma do Software
 
 O software é estruturado com **FreeRTOS** para gerenciar tarefas concorrentes em tempo real. O fluxograma a seguir descreve o fluxo principal:
+![fluxograma de software](fluxograma_de_software.jpg)
 
 
 ### Detalhamento das Tarefas
