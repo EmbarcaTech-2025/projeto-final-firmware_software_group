@@ -1,95 +1,97 @@
-# Proposta de Arquitetura do Sistema: Mala Autônoma Seguidora
 
-## Diagrama de Hardware
- 
-A arquitetura de hardware da mala autônoma é projetada para ser modular, de baixo custo e eficiente, utilizando o **Raspberry Pi Pico W** como núcleo de controle. O diagrama a seguir ilustra os principais componentes e suas conexões:
+
+
+
+
+# Proposta de Arquitetura do Sistema para Mala Autônoma
+
+## Objetivo
+Apresentar a proposta de arquitetura do sistema, incluindo o diagrama de hardware, os blocos funcionais e o fluxograma do software.
+
+## Explicação do Diagrama de Blocos para Mala Autônoma
+
+### Visão Geral
+O projeto de mala autônoma utiliza a placa BitDogLab com uma Raspberry Pi Pico W como controlador central. Uma segunda Raspberry Pi Pico W lida com a detecção de identidade baseada em câmera usando TinyML.
+
+### Componentes
+- **Raspberry Pi Pico W - BitDogLab**: Hub central para processamento de dados de sensores e controle de motores.
+- **Câmera (OV2640)**: Conectada à segunda Pico W para captura de imagens e processamento com TinyML, ligada via MQTT.
+- **LEDs (RGB)**: GPIOs 11, 12, 13 para feedback visual.
+- **Buzzer**: GPIO 21 para alertas sonoros.
+- **Sensor Capacitivo (TTP223B)**: GPIO 4 para detecção de toque na alça.
+- **Dispositivos I2C (I2C0 - GPIOs 0, 1)**:
+  - Acelerômetro/Giroscópio (MPU6050)
+  - Sensor de Distância (VL53L0X)
+  - Amplificador de Áudio (MAX98357) com mini alto-falantes
+- **Sensor Ultrassônico (HC-SR04)**: GPIOs 2, 3 para detecção de proximidade.
+- **Módulo GPS**: UART1 (GPIOs 8, 9) para rastreamento de localização.
+- **Ponte H (TB6612FNG)**: GPIOs 18, 19, 20, 4, 16, 17, 28 para controlar dois motores DC (3-6V).
+- **Fonte de Energia**:
+  - Bateria de lítio 3,7V para ambas as Pico Ws.
+  - Bateria de lítio 7,4V para Ponte H e motores.
+
+### Comunicação
+- MQTT para troca de dados entre as duas Pico Ws (dados da câmera e identidade).
+- UART para interface de usuário e transmissão de dados.
+- I2C para comunicação e configuração de vários sensores.
+
+## Diagrama de Hardware para Mala Autônoma
 ![diagrama de hardware](diagrama_de_hardware.jpg)
 
-### Descrição das Conexões
-- **Raspberry Pi Pico W**: Microcontrolador principal, gerencia todas as tarefas via FreeRTOS, processa dados de sensores, executa TinyML para visão computacional e se comunica via Wi-Fi (HTTP/MQTT).
-- **Câmera OV7670**: Conectada via SPI/PIO para captura de imagens, usada para seguimento do usuário com TinyML.
-- **Giroscópio MPU6050**: Conectado via I2C, fornece dados de orientação para correção de trajetória.
-- **GPS NEO-6M**: Conectado via UART, envia dados de localização para rastreamento remoto.
-- **Sensor Ultrassônico HC-SR04**: Conectado via GPIO, detecta obstáculos frontais.
-- **Sensor de Toque TTP223**: Conectado via GPIO com interrupção, para parada imediata ao toque.
-- **Ponte H TB6612FNG**: Controla dois motores DC para movimentação, conectada via GPIO (PWM).
-- **Amplificador MAX98357**: Conectado via I2S, emite alertas sonoros.
-- **LEDs RGB**: Conectados via GPIO, indicam estados do sistema (seguindo, parado, erro, etc.).
-- **Bateria Li-ion 7.4V**: Alimenta o sistema com conversores para 5V e 3.3V, garantindo autonomia mínima de 1 hora.
+### Visão Geral
+A configuração de hardware gira em torno da Raspberry Pi Pico W dentro da placa BitDogLab, integrando vários sensores, atuadores e fontes de energia para operação autônoma.
 
----
+### Conexões de Hardware
+- **Raspberry Pi Pico W - BitDogLab**: Controlador central.
+- **Segunda Raspberry Pi Pico W**: Conectada via MQTT, hospeda a câmera OV2640 para processamento com TinyML.
+- **LEDs (RGB)**: GPIOs 11, 12, 13.
+- **Buzzer**: GPIO 21.
+- **Sensor Capacitivo (TTP223B)**: GPIO 4.
+- **Dispositivos I2C (I2C0 - GPIOs 0, 1)**:
+  - MPU6050 (Acelerômetro/Giroscópio)
+  - VL53L0X (Sensor de Distância)
+  - MAX98357 (Amplificador de Áudio) com mini alto-falantes de 0,5W
+- **Sensor Ultrassônico (HC-SR04)**: GPIOs 2, 3.
+- **Módulo GPS (GY-NEO6MV2)**: UART1 (GPIOs 8, 9).
+- **Ponte H (TB6612FNG)**: GPIOs 18, 19, 20, 4, 16, 17, 28, controla dois motores DC de 3-6V.
+- **Energia**:
+  - Bateria de lítio 3,7V para as Pico Ws.
+  - Bateria de lítio 7,4V para Ponte H e motores.
 
-## Blocos Funcionais
+### Distribuição de Energia
+- Bateria de 3,7V alimenta diretamente as Pico Ws.
+- Bateria de 7,4V abastece a Ponte H para operação dos motores.
 
-Os blocos funcionais representam os módulos principais do sistema, divididos em hardware e software, com interdependências claras:
-
-1. **Módulo de Visão Computacional**:
-   - **Função**: Processa imagens da OV7670 para identificar e seguir o usuário.
-   - **Componentes**: Câmera OV7670, TinyML no Raspberry Pi Pico W.
-   - **Saída**: Dados de posição relativa do usuário.
-
-2. **Módulo de Navegação e Controle**:
-   - **Função**: Controla motores para movimento e correção de trajetória.
-   - **Componentes**: Ponte H TB6612FNG, motores DC, giroscópio MPU6050.
-   - **Saída**: Movimentação suave e ajustes baseados em orientação.
-
-3. **Módulo de Detecção de Obstáculos**:
-   - **Função**: Detecta obstáculos e evita colisões.
-   - **Componentes**: Sensor ultrassônico HC-SR04, dados da câmera OV7670.
-   - **Saída**: Sinal para parada ou desvio.
-
-4. **Módulo de Interação Humana**:
-   - **Função**: Responde a toques e exibe estados do sistema.
-   - **Componentes**: Sensor TTP223, LEDs RGB, amplificador MAX98357, alto-falante.
-   - **Saída**: Parada imediata, alertas sonoros, indicadores visuais.
-
-5. **Módulo de Comunicação Remota**:
-   - **Função**: Envia posição GPS e recebe comandos remotos.
-   - **Componentes**: GPS NEO-6M, Wi-Fi do Raspberry Pi Pico W.
-   - **Saída**: Dados de localização via HTTP/MQTT.
-
-6. **Módulo de Gerenciamento de Energia**:
-   - **Função**: Fornece energia estável e eficiente.
-   - **Componentes**: Bateria Li-ion, conversores de tensão.
-   - **Saída**: Alimentação para todos os componentes.
-
----
-
-## Fluxograma do Software
-
-O software é estruturado com **FreeRTOS** para gerenciar tarefas concorrentes em tempo real. O fluxograma a seguir descreve o fluxo principal:
+## Fluxograma para Software da Mala Autônoma
 ![fluxograma de software](fluxograma_de_software.jpg)
 
+### Visão Geral
+O fluxograma de software delineia a lógica de controle para a mala autônoma, iniciada por uma interrupção de temporizador ou escalonador RTOS na Raspberry Pi Pico W da BitDogLab.
 
-### Detalhamento das Tarefas
-1. **Task de Visão Computacional**:
-   - Prioridade alta, executa a cada 100ms.
-   - Captura imagens, processa com modelo TinyML, atualiza posição do usuário.
+### Etapas
+1. **Inicialização do Sistema**:
+   - Incluir bibliotecas necessárias.
+   - Configurar UART para interface de usuário.
+   - Configurar pinos de LEDs e botões.
+   - Configurar UART para módulo GPS.
+   - Configurar PWM para buzzer ou mini alto-falantes.
+   - Configurar PWM para motores DC.
+   - Configurar I2C para acelerômetro, sensor de distância e amplificador de áudio.
+   - Configurar interrupção de temporizador ou escalonador RTOS.
+2. **Gatilho de Interrupção**:
+   - Verificar ativação por interrupção de temporizador ou escalonador RTOS.
+3. **Loop de Processamento** (se interrupção ocorrer):
+   - Obter identidade da câmera via MQTT (da segunda Pico W).
+   - Recuperar posição do módulo GPS.
+   - Buscar posição GPS do celular do dono via MQTT.
+   - Calcular ângulo entre as posições GPS do dono e da mala.
+   - Determinar vetor de movimento usando todos os dados coletados.
+   - Verificar se a distância excede o limite máximo; emitir sinais sonoros e luminosos se verdadeiro.
+   - Obter medições do acelerômetro/giroscópio.
+   - Gerar sinal PWM usando controle PID.
+   - Controlar torque e direção dos motores com PWM.
+   - Enviar dados via UART.
+4. **Retorno ao Temporizador**: Voltar para aguardar a próxima interrupção.
 
-2. **Task de Navegação**:
-   - Prioridade média, executa a cada 50ms.
-   - Lê giroscópio, ajusta PWM dos motores para seguir o usuário.
-
-3. **Task de Detecção de Obstáculos**:
-   - Prioridade alta, executa a cada 50ms.
-   - Integra dados do HC-SR04 e visão para evitar colisões.
-
-4. **Task de Interação Humana**:
-   - Prioridade média, executa sob demanda (interrupção do TTP223).
-   - Atualiza LEDs e reproduz alertas sonoros.
-
-5. **Task de Comunicação Remota**:
-   - Prioridade baixa, executa a cada 5s.
-   - Envia dados GPS via HTTP/MQTT.
-
-### Considerações de Software
-- **FreeRTOS**: Garante execução concorrente e determinística.
-- **Interrupções**: Usadas para sensor de toque (alta prioridade).
-- **TinyML**: Modelo otimizado para baixo consumo, treinado previamente.
-- **Comunicação**: Wi-Fi configurado para HTTP ou MQTT, com buffer para dados GPS.
-- **Segurança**: Timeout para falhas de sensores, parada de emergência.
-
----
-
-## Considerações Finais
-A arquitetura proposta é modular e escalável, permitindo futuras expansões (ex.: controle por app, comandos por voz). O uso do FreeRTOS garante eficiência em tempo real, enquanto o hardware de baixo custo mantém o projeto acessível. A integração de TinyML com sensores tradicionais oferece robustez ao seguimento e desvio de obstáculos.
+### Notas
+- O sistema pausa o seguimento quando o sensor capacitivo detecta toque na alça.
