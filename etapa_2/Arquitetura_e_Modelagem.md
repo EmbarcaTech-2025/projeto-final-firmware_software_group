@@ -3,7 +3,7 @@
 ## Diagrama de Hardware
  
 A arquitetura de hardware da mala autônoma é projetada para ser modular, de baixo custo e eficiente, utilizando o **Raspberry Pi Pico W** como núcleo de controle. O diagrama a seguir ilustra os principais componentes e suas conexões:
-<img src = "diagrama_de_hardware.fpg">
+<img src = "diagrama_de_hardware.jpg">
 
 ### Descrição das Conexões
 - **Raspberry Pi Pico W**: Microcontrolador principal, gerencia todas as tarefas via FreeRTOS, processa dados de sensores, executa TinyML para visão computacional e se comunica via Wi-Fi (HTTP/MQTT).
