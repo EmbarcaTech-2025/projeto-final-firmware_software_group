@@ -15,7 +15,7 @@ O projeto de mala autônoma utiliza a placa BitDogLab com uma Raspberry Pi Pico 
 
 ### Componentes
 - **Raspberry Pi Pico W - BitDogLab**: Hub central para processamento de dados de sensores e controle de motores.
-- **Câmera (OV2640)**: Conectada à segunda Pico W para captura de imagens e processamento com TinyML, ligada via MQTT.
+- **Câmera (OV2640)**: Conectada à segunda Pico W para captura de imagens e processamento com TinyML, se comunica com a BitDogLab via MQTT.
 - **LEDs (RGB)**: GPIOs 11, 12, 13 para feedback visual.
 - **Buzzer**: GPIO 21 para alertas sonoros.
 - **Sensor Capacitivo (TTP223B)**: GPIO 4 para detecção de toque na alça.
