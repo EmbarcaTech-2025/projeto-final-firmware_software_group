@@ -13,7 +13,10 @@
 #include "hardware/i2c.h"
 
 // driver for the motor (h bridge tb6612fng)
-#include "motor.h"
+#include "include/motor.h"
+#include "include/mpu6050_i2c.h"
+#include "include/mqtt_comm.h"
+#include "include/wifi_conn.h"
 
 int main() {
     int direction;
@@ -37,7 +40,7 @@ int main() {
     level = (uint16_t)limitado << 8; // converte e ajusta escala
 
     printf("the level is %d\n", level);
-    level = 0;
+    //level = 0;
 	while(1) {
         motor_set_both_level(level, direction);
         sleep_ms(3000);

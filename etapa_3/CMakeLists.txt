@@ -39,8 +39,10 @@ pico_sdk_init()
 
 add_executable( ${ProjectName}
   main.c
-  motor.c
-
+  src/motor.c
+  src/mpu6050_i2c.c
+  src/mqtt_comm.c
+  src/wifi_conn.c
 )
 
 
