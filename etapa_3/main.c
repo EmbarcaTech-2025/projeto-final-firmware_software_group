@@ -76,7 +76,7 @@ int main() {
     level = (uint16_t)limitado << 8; // converte e ajusta escala
     **/
 
-    control_signal_percentage = 0.50;
+    control_signal_percentage = 0.90;
     control_signal = +0.50f * 255.0f;
     direction = control_signal > 0; // obtem direcao
     magnitude = fabsf(control_signal); // obtem modulo do sinal
@@ -90,17 +90,22 @@ int main() {
     limitado = fminf(magnitude, 255.0f); // limita ao maximo de 255
     level_right = (uint16_t)limitado << 8; // converte e ajusta escala
 
-    printf("the level is %d\n", level);
-    debug = 1;
+    printf("the level left is %d\n", level_left);
+    printf("the level right is %d\n", level_right);
+
+    debug = 0;
     if (debug) {
         level_left = 0;
-        level_right = 0;
+       level_right = 0;
     }
 
-    delay_time_ms = 10;
+    //delay_time_ms = 10;
     acumulated_delay_time_ms = 0;
     max_delay_time_ms = 1000;
 	while(1) {
+            printf("the level left is %d\n", level_left);
+    printf("the level right is %d\n", level_right);
+
 
         // control for the direction using the accelerometer/gyroscope
         mpu6050_read_raw(accel_raw, gyro_raw, &temp);
@@ -139,13 +144,13 @@ int main() {
         motor_set_left_level(level_left, direction);
         motor_set_right_level(level_right, direction);
 
-        sleep_ms(delay_time_ms);
+        // sleep_ms(delay_time_ms);
 
 
         // motor_set_both_level(0, direction);
-        motor_set_left_level(0, direction);
-        motor_set_right_level(0, direction);
-        sleep_ms(0);
+        motor_set_left_level(level_left, direction);
+        motor_set_right_level(level_right, direction);
+        sleep_ms(10000);
 
         acumulated_delay_time_ms+=delay_time_ms;
         if (acumulated_delay_time_ms >= max_delay_time_ms) {
