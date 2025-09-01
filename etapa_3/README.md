@@ -1,6 +1,6 @@
 # Authors: Daltro Oliveira Vinuto e Kyara Esteves de Sousa
 
- * Video do prototipo: [video do prototipo]("https://youtube.com/shorts/Z3IEkT1Q4Xs?si=02bnjLTSYkX6-U27")
+ * Video do prototipo: [video do prototipo](https://youtube.com/shorts/Z3IEkT1Q4Xs?si=02bnjLTSYkX6-U27)
 # Ajustes Necessarios
  * E necessario finalizar o controle da direcao usando o gyroscopio/acelerometro
  * E necessario realizar a conexao via MQTT
