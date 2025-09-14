@@ -18,6 +18,13 @@
 #include "include/mqtt_comm.h"
 #include "include/wifi_conn.h"
 
+#define RED_LED 13
+#define GREEN_LED 11
+#define BLUE_LED 12
+
+#define LEFT_BUTTON 6
+#define RIGHT_BUTTON 5
+
 struct Angle {
     float x, y, z;
 };
@@ -35,8 +42,43 @@ struct Acc {
 typedef struct Acc Acc_t;
 
 
+void button_setup() {
+    gpio_init(LEFT_BUTTON);
+    gpio_init(RIGHT_BUTTON);
+
+    gpio_set_dir(LEFT_BUTTON, GPIO_IN);
+    gpio_set_dir(RIGHT_BUTTON, GPIO_IN);
+
+    gpio_pull_up(LEFT_BUTTON);
+    gpio_pull_up(RIGHT_BUTTON);
+
+}
+
+void leds_setup() {
+    gpio_init(RED_LED);
+    gpio_init(GREEN_LED);
+    gpio_init(BLUE_LED);
+
+    gpio_set_dir(RED_LED, GPIO_OUT);
+    gpio_put(RED_LED, 0);
+
+    gpio_set_dir(GREEN_LED, GPIO_OUT);
+    gpio_put(GREEN_LED, 0);
+
+    gpio_set_dir(BLUE_LED, GPIO_OUT);
+    gpio_put(BLUE_LED, 0);
+}
+
+void set_leds(uint red_signal, uint green_signal, uint blue_signal) {
+    gpio_put(RED_LED, red_signal);
+    gpio_put(GREEN_LED, green_signal);
+    gpio_put(BLUE_LED, blue_signal);
+
+}
+
 
 int main() {
+    bool green_signal = false, red_signal = false;
     int delay_time_ms, acumulated_delay_time_ms, max_delay_time_ms;
     int direction;
     float control_signal, control_signal_percentage;
@@ -59,6 +101,12 @@ int main() {
 
     sleep_ms(3000);
     printf("Welcome to the binary world!\n");
+
+    // setup the buttons
+    button_setup();
+
+    // setup the leds
+    leds_setup();
     
     // setup and enable motor
     motor_setup();
@@ -76,22 +124,23 @@ int main() {
     level = (uint16_t)limitado << 8; // converte e ajusta escala
     **/
 
-    control_signal_percentage = 0.90;
-    control_signal = +0.50f * 255.0f;
+    control_signal_percentage = 0.20;
+
+    control_signal = control_signal_percentage * 255.0f;
     direction = control_signal > 0; // obtem direcao
     magnitude = fabsf(control_signal); // obtem modulo do sinal
     limitado = fminf(magnitude, 255.0f); // limita ao maximo de 255
     level_left = (uint16_t)limitado << 8; // converte e ajusta escala
 
     offset = 30; // in percentage
-    control_signal = control_signal_percentage*(1-offset/100.0) * 255.0f;
+    //control_signal = control_signal_percentage*(1-offset/100.0) * 255.0f;
+    control_signal = control_signal_percentage * 255.0f;
     direction = control_signal > 0; // obtem direcao
     magnitude = fabsf(control_signal); // obtem modulo do sinal
     limitado = fminf(magnitude, 255.0f); // limita ao maximo de 255
     level_right = (uint16_t)limitado << 8; // converte e ajusta escala
 
-    printf("the level left is %d\n", level_left);
-    printf("the level right is %d\n", level_right);
+
 
     debug = 0;
     if (debug) {
@@ -99,13 +148,10 @@ int main() {
        level_right = 0;
     }
 
-    //delay_time_ms = 10;
+    delay_time_ms = 100;
     acumulated_delay_time_ms = 0;
     max_delay_time_ms = 1000;
 	while(1) {
-            printf("the level left is %d\n", level_left);
-    printf("the level right is %d\n", level_right);
-
 
         // control for the direction using the accelerometer/gyroscope
         mpu6050_read_raw(accel_raw, gyro_raw, &temp);
@@ -122,10 +168,16 @@ int main() {
         angle.z = angles[2];
         **/
 
-        accelerometer.x = accel[0]; accelerometer.y = accel[1]; accelerometer.z = accel[2];
-        gyroscope.x = gyro[0]; gyroscope.y = gyro[1]; gyroscope.z = gyro[2];
+        accelerometer.x = accel[0]; 
+        accelerometer.y = accel[1]; 
+        accelerometer.z = accel[2];
+        gyroscope.x = gyro[0];
+        gyroscope.y = gyro[1];
+        gyroscope.z = gyro[2];
         roll = (atan2(accelerometer.y, accelerometer.z)*180)/(M_PI);
-        pitch = (atan2(-accelerometer.x, sqrt(accelerometer.z*accelerometer.z  +accelerometer.y + accelerometer.y))*180)/(M_PI);
+        pitch = (atan2(-accelerometer.x, 
+            sqrt(accelerometer.z*accelerometer.z  +accelerometer.y*accelerometer.y))
+            *180)/(M_PI);
         yaw = (atan2(accelerometer.x, accelerometer.y)*180)/(M_PI);
 
 
@@ -140,19 +192,44 @@ int main() {
         printf("\n\n");
         */
 
-       // motor_set_both_level(level, direction);
-        motor_set_left_level(level_left, direction);
-        motor_set_right_level(level_right, direction);
+        // motor_set_both_level(level, direction);  
+        // motor_set_left_level(level_left, direction);
+        // motor_set_right_level(level_right, direction);
 
         // sleep_ms(delay_time_ms);
 
 
         // motor_set_both_level(0, direction);
-        motor_set_left_level(level_left, direction);
-        motor_set_right_level(level_right, direction);
-        sleep_ms(10000);
+
+        // right button start the motors
+        if (!gpio_get(RIGHT_BUTTON)) {
+            printf("right button pressed!\n");
+            green_signal = true;
+            red_signal = false;
+            set_leds( 0, 1, 0);
+            motor_set_left_level(level_left, direction);
+            motor_set_right_level(level_right, direction);
+
+            printf("the level left is %d\n", level_left);
+            printf("the level right is %d\n", level_right);
+        }
+
+        // left button stop the motors
+        if (!gpio_get(LEFT_BUTTON)) {
+            printf("left button pressed!\n");
+            green_signal = false;
+            red_signal = true;
+            set_leds( 1, 0, 0);
+            motor_set_left_level(0, direction);
+            motor_set_right_level(0, direction);
+        }
+
+        sleep_ms(delay_time_ms);
+
+
 
         acumulated_delay_time_ms+=delay_time_ms;
+        /*
         if (acumulated_delay_time_ms >= max_delay_time_ms) {
             acumulated_delay_time_ms = 0;
             //printf("Angle x: °%.1f\n", angle.x);
@@ -168,6 +245,7 @@ int main() {
             printf("\n\n");
 
         }
+        */
         
     }
 

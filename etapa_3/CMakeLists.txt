@@ -28,6 +28,7 @@ set(ProjectName smart_suitcase)
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+
 # include(${FREERTOS_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake)
 
 project(${ProjectName} C CXX ASM)
@@ -36,7 +37,6 @@ project(${ProjectName} C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-
 add_executable( ${ProjectName}
   main.c
   src/motor.c
