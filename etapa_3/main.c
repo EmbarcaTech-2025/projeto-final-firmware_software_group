@@ -140,17 +140,10 @@ int main() {
     limitado = fminf(magnitude, 255.0f); // limita ao maximo de 255
     level_right = (uint16_t)limitado << 8; // converte e ajusta escala
 
-
-
-    debug = 0;
-    if (debug) {
-        level_left = 0;
-       level_right = 0;
-    }
-
     delay_time_ms = 100;
     acumulated_delay_time_ms = 0;
     max_delay_time_ms = 1000;
+
 	while(1) {
 
         // control for the direction using the accelerometer/gyroscope
@@ -192,15 +185,6 @@ int main() {
         printf("\n\n");
         */
 
-        // motor_set_both_level(level, direction);  
-        // motor_set_left_level(level_left, direction);
-        // motor_set_right_level(level_right, direction);
-
-        // sleep_ms(delay_time_ms);
-
-
-        // motor_set_both_level(0, direction);
-
         // right button start the motors
         if (!gpio_get(RIGHT_BUTTON)) {
             printf("right button pressed!\n");
@@ -225,8 +209,6 @@ int main() {
         }
 
         sleep_ms(delay_time_ms);
-
-
 
         acumulated_delay_time_ms+=delay_time_ms;
         /*
