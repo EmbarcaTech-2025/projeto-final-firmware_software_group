@@ -39,6 +39,9 @@ double suitcase_lon = 0.0;
 volatile double person_lat = 0.0;
 volatile double person_lon = 0.0;
 
+volatile bool is_navigating = false;
+volatile bool is_manual = false;
+
 typedef uint8_t byte;
 
 #define RED_LED 13
@@ -108,11 +111,32 @@ float read_compass_heading() {
     return heading_deg;
 }
 
+void set_leds(uint red_signal, uint green_signal, uint blue_signal) {
+    gpio_put(RED_LED, red_signal);
+    gpio_put(GREEN_LED, green_signal);
+    gpio_put(BLUE_LED, blue_signal);
+
+}
+
+
 // Reads from UART and feeds the GPS library
 void read_suitcase_gps_task() {
+    /*
     while (uart_is_readable(UART_ID)) {
         gps.encode(uart_getc(UART_ID));
     }
+    */
+
+    while (uart_is_readable(UART_ID)) {
+        char ch = uart_getc(UART_ID);
+        // --- TEMPORARY DEBUG LINE ---
+        // Print every character received from the GPS
+        printf("%c", ch);
+        
+        // Feed the character to the library
+        gps.encode(ch);
+    }
+
     // Update global variables if the location has changed
     if (gps.location.isUpdated()) {
         suitcase_lat = gps.location.lat();
@@ -120,57 +144,50 @@ void read_suitcase_gps_task() {
     }
 }
 
-// The main "follow-me" logic function
-void follow_me_logic() {
-    // Only run if we have a valid GPS fix for the suitcase and have received the person's location
-    if (!gps.location.isValid() || person_lat == 0.0) {
-        printf("Waiting for valid GPS fix for suitcase and person...\n");
-        motor_set_left_level(0, 1); // Stop motors
-        motor_set_right_level(0, 1);
+// Replace your old follow_me_logic() with this new function
+void navigate_to_destination() {
+    const double STOPPING_DISTANCE = 1.0; // Stop within 1.0 meters
+
+    // Safety check: Don't move if our own GPS isn't ready
+    if (!gps.location.isValid()) {
+        printf("Waiting for own GPS fix before starting journey...\n");
         return;
     }
 
-    // Calculate distance and the direction we need to go
-    double distance_to_person = TinyGPSPlus::distanceBetween(suitcase_lat, suitcase_lon, person_lat, person_lon);
+    // Calculate distance and bearing to the fixed destination
+    double distance_to_dest = TinyGPSPlus::distanceBetween(suitcase_lat, suitcase_lon, person_lat, person_lon);
     double target_bearing = TinyGPSPlus::courseTo(suitcase_lat, suitcase_lon, person_lat, person_lon);
-    
-    // Find out which way we are currently facing using the UNCALIBRATED compass
     float current_heading = read_compass_heading();
-
-    // Calculate the difference between where we want to go and where we are facing
     float heading_error = target_bearing - current_heading;
 
-    // Normalize the error to be between -180 and 180 degrees
     if (heading_error > 180)  heading_error -= 360;
     if (heading_error < -180) heading_error += 360;
 
-    printf("Dist:%.1fm, Target:%.1f, Current:%.1f, Err:%.1f\n", distance_to_person, target_bearing, current_heading, heading_error);
+    // --- Have we arrived? ---
+    if (distance_to_dest <= STOPPING_DISTANCE) {
+        printf("Destination reached! Stopping.\n");
+        motor_set_left_level(0, 1); // Stop
+        motor_set_right_level(0, 1);
+        is_navigating = false; // CRITICAL: This stops the process
+        set_leds(1, 0, 0);     // Set light to red (STOP)
+        return;
+    }
 
-    // --- Motor Control Decision Logic ---
-    uint16_t turn_speed = 16384; // Approx 25% speed for turning
-    uint16_t move_speed = 32768; // Approx 50% speed for moving forward
+    // --- If we haven't arrived, continue navigating ---
+    uint16_t turn_speed = 16384; 
+    uint16_t move_speed = 24576; 
     
-    // If we are pointing in the wrong direction, prioritize turning
-    if (abs(heading_error) > 25.0) { // Use a wider tolerance (25 degrees) for uncalibrated sensor
+    if (abs(heading_error) > 25.0) {
         if (heading_error > 0) {
-            // Turn Right (left motor forward, right motor backward)
-            motor_set_left_level(turn_speed, 1); 
+            motor_set_left_level(turn_speed, 1); // Turn Right
             motor_set_right_level(turn_speed, 0);
         } else {
-            // Turn Left (left motor backward, right motor forward)
-            motor_set_left_level(turn_speed, 0); 
+            motor_set_left_level(turn_speed, 0); // Turn Left
             motor_set_right_level(turn_speed, 1);
         }
-    }
-    // If we are facing the right way, decide whether to move or stop
-    else {
-        if (distance_to_person > 4.0) { // If person is more than 4m away
-            motor_set_left_level(move_speed, 1); // Move forward
-            motor_set_right_level(move_speed, 1);
-        } else {
-            motor_set_left_level(0, 1); // Stop
-            motor_set_right_level(0, 1);
-        }
+    } else {
+        motor_set_left_level(move_speed, 1); // Move forward
+        motor_set_right_level(move_speed, 1);
     }
 }
 
@@ -235,12 +252,6 @@ void leds_setup() {
     gpio_put(BLUE_LED, 0);
 }
 
-void set_leds(uint red_signal, uint green_signal, uint blue_signal) {
-    gpio_put(RED_LED, red_signal);
-    gpio_put(GREEN_LED, green_signal);
-    gpio_put(BLUE_LED, blue_signal);
-
-}
 
 
 // This function manually parses only the lat/lon from a JSON string
@@ -340,8 +351,18 @@ void mqtt_router_callback(const char *topic, const u8_t *data, u16_t len) {
     // Route the message to the correct handler based on the topic
     if (strcmp(topic, mqtt_topic_location) == 0) {
         parse_gps_coordinates(payload_buffer);
+
+        // If parsing was successful, start the navigation process
+        if (person_lat != 0.0 || person_lon != 0.0) {
+            printf("New destination set! Starting navigation.\n");
+            is_navigating = true; // This is the trigger!
+            is_manual = false;
+        }
+
     } else if (strcmp(topic, mqtt_topic_bitdoglab) == 0) {
         handle_command_message(payload_buffer);
+        is_manual = true;
+        is_navigating = false;
     }
 }
 
@@ -456,6 +477,7 @@ int main() {
     max_delay_time_ms = 1000;
 
 	while(1) {
+        
         // right button start the motors
         if (!gpio_get(RIGHT_BUTTON) || start_motor) {
             printf("right button pressed!\n");
@@ -507,9 +529,9 @@ int main() {
                 motor_set_left_level(0, 1);
             }
         }
-        sleep_ms(delay_time_ms);
+        //sleep_ms(delay_time_ms);
         
-
+        
         /*
 
         // control for the direction using the accelerometer/gyroscope
@@ -593,22 +615,19 @@ int main() {
             stop_motor = true;
         }
 
-        /*
-        // --- 3. EXECUTE LOGIC BASED ON STATE ---
-        // Run the main decision-making logic ONLY if in "start" mode
-        if (start_motor && !stop_motor) {
+        
+        // Check if we are currently in the process of navigating
+        if (is_navigating) {
             set_leds(0, 1, 0); // Green light for "GO"
-            follow_me_logic();
-        } else {
-            // If in stop mode, make sure motors are off and light is red
-            set_leds(1, 0, 0); // Red light for "STOP"
+            navigate_to_destination();
+        } else if (!is_manual) {
+            // If not navigating, do nothing and make sure motors are off and light is red
+            set_leds(1, 0, 0); // Red light for "IDLE/STOP"
             motor_set_left_level(0, 1);
             motor_set_right_level(0, 1);
         }
-        */
 
-        // --- 4. DELAY ---
-        sleep_ms(100); // Main loop delay
+        sleep_ms(500); // Main loop delay
         
     }
 
