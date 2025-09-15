@@ -51,10 +51,10 @@ typedef uint8_t byte;
 #define LEFT_BUTTON 6
 #define RIGHT_BUTTON 5
 
-#define UART_RX_PIN 9
-#define UART_TX_PIN 8
+#define UART_RX_PIN 17
+#define UART_TX_PIN 16
 #define BAUD_RATE 9600
-#define UART_ID uart1
+#define UART_ID uart0
 
 char payload_buffer[256];
 
