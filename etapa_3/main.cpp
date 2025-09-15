@@ -456,45 +456,6 @@ int main() {
     max_delay_time_ms = 1000;
 
 	while(1) {
-
-
-        /*
-
-        // control for the direction using the accelerometer/gyroscope
-        mpu6050_read_raw(accel_raw, gyro_raw, &temp);
-
-        // Convert to g's and degrees per second
-        for (uint8_t i = 0; i < 3; i++) {
-            accel[i] = (float)accel_raw[i] / 16384.0f;
-            gyro[i] = (float)gyro_raw[i] / 131.0f;
-            //angles[i] = (180*asinf(accel[i]))/M_PI;
-        }
-
-
-        accelerometer.x = accel[0]; 
-        accelerometer.y = accel[1]; 
-        accelerometer.z = accel[2];
-        gyroscope.x = gyro[0];
-        gyroscope.y = gyro[1];
-        gyroscope.z = gyro[2];
-        roll = (atan2(accelerometer.y, accelerometer.z)*180)/(M_PI);
-        pitch = (atan2(-accelerometer.x, 
-            sqrt(accelerometer.z*accelerometer.z  +accelerometer.y*accelerometer.y))
-            *180)/(M_PI);
-        yaw = (atan2(accelerometer.x, accelerometer.y)*180)/(M_PI);
-
-
-        //direction = angle.y < 0;
-
-        /*
-        printf("--------------------------------\n");
-        printf("Accel X: %.3f g's, Y: %.3f g's, Z: %.3f g's \n", accel[0], accel[1], accel[2]);
-        printf("Gyro X: %.1f °/s Y: %.1f °/s, Z: %.1f °/s\n", gyro[0], gyro[1], gyro[2]);
-        printf("Gyro X: %.1f °, Y: %.1f °, Z: %.1f °\n", angle.x, angle.y, angle.z);
-
-        printf("\n\n");
-        */
-
         // right button start the motors
         if (!gpio_get(RIGHT_BUTTON) || start_motor) {
             printf("right button pressed!\n");
@@ -547,8 +508,48 @@ int main() {
             }
         }
         sleep_ms(delay_time_ms);
+        
 
-        acumulated_delay_time_ms+=delay_time_ms;
+        /*
+
+        // control for the direction using the accelerometer/gyroscope
+        mpu6050_read_raw(accel_raw, gyro_raw, &temp);
+
+        // Convert to g's and degrees per second
+        for (uint8_t i = 0; i < 3; i++) {
+            accel[i] = (float)accel_raw[i] / 16384.0f;
+            gyro[i] = (float)gyro_raw[i] / 131.0f;
+            //angles[i] = (180*asinf(accel[i]))/M_PI;
+        }
+
+
+        accelerometer.x = accel[0]; 
+        accelerometer.y = accel[1]; 
+        accelerometer.z = accel[2];
+        gyroscope.x = gyro[0];
+        gyroscope.y = gyro[1];
+        gyroscope.z = gyro[2];
+        roll = (atan2(accelerometer.y, accelerometer.z)*180)/(M_PI);
+        pitch = (atan2(-accelerometer.x, 
+            sqrt(accelerometer.z*accelerometer.z  +accelerometer.y*accelerometer.y))
+            *180)/(M_PI);
+        yaw = (atan2(accelerometer.x, accelerometer.y)*180)/(M_PI);
+
+
+        //direction = angle.y < 0;
+
+        /*
+        printf("--------------------------------\n");
+        printf("Accel X: %.3f g's, Y: %.3f g's, Z: %.3f g's \n", accel[0], accel[1], accel[2]);
+        printf("Gyro X: %.1f °/s Y: %.1f °/s, Z: %.1f °/s\n", gyro[0], gyro[1], gyro[2]);
+        printf("Gyro X: %.1f °, Y: %.1f °, Z: %.1f °\n", angle.x, angle.y, angle.z);
+
+        printf("\n\n");
+        */
+
+
+
+        // acumulated_delay_time_ms+=delay_time_ms;
         /*
         if (acumulated_delay_time_ms >= max_delay_time_ms) {
             acumulated_delay_time_ms = 0;
@@ -567,7 +568,7 @@ int main() {
         }
         */
 
-
+        /*
         // read the values from the magnetometer
          int16_t mag_raw[3]; // X, Y, Z
         mpu9250_read_mag_raw(I2C_PORT, mag_raw);
@@ -576,31 +577,37 @@ int main() {
         printf("Raw Mag -> X: %d, Y: %d, Z: %d\n", mag_raw[0], mag_raw[1], mag_raw[2]);
         
         //sleep_ms(250);
+        */
 
-        // Always read the latest data from the suitcase's GPS module
-        read_suitcase_gps_task();
+        // --- 1. READ ALL SENSORS ---
+        read_suitcase_gps_task(); // Update suitcase's own location from its GPS
 
+        // --- 2. CHECK FOR MANUAL COMMANDS ---
         // Check for manual start/stop commands from buttons or MQTT
         if (!gpio_get(RIGHT_BUTTON) || start_motor) {
             start_motor = true;
             stop_motor = false;
-            set_leds(0, 1, 0); // Green light for "GO"
         }
         if (!gpio_get(LEFT_BUTTON) || stop_motor) {
             start_motor = false;
             stop_motor = true;
-            set_leds(1, 0, 0); // Red light for "STOP"
         }
 
+        /*
+        // --- 3. EXECUTE LOGIC BASED ON STATE ---
         // Run the main decision-making logic ONLY if in "start" mode
         if (start_motor && !stop_motor) {
+            set_leds(0, 1, 0); // Green light for "GO"
             follow_me_logic();
         } else {
-            // If in stop mode, make sure motors are off
+            // If in stop mode, make sure motors are off and light is red
+            set_leds(1, 0, 0); // Red light for "STOP"
             motor_set_left_level(0, 1);
             motor_set_right_level(0, 1);
         }
+        */
 
+        // --- 4. DELAY ---
         sleep_ms(100); // Main loop delay
         
     }
