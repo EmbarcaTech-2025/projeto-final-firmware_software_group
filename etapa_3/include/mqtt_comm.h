@@ -1,23 +1,18 @@
 #ifndef MQTT_COMM_H
 #define MQTT_COMM_H
 
+#include "lwip/apps/mqtt.h" // Include this to get u8_t type
 
-typedef void (*CallbackFunction)(void *arg, const u8_t *data, u16_t len, u8_t flags);
+// Define the function signature for our single "router" callback
+typedef void (*mqtt_router_callback_t)(const char *topic, const u8_t *data, u16_t len);
 
-typedef struct {
-    CallbackFunction function;
-    char *mqtt_topic;
-} Subscriber_Data;
+// Function to connect to the broker and set the main callback
+void mqtt_connect_and_set_router(const char *client_id, const char *broker_ip, const char *user, const char *pass, mqtt_router_callback_t router_cb);
 
-// connect function 
-void mqtt_setup_publish(const char *client_id, const char *broker_ip, const char *user, const char *pass);
+// Function to subscribe to a topic after connecting
+void mqtt_subscribe_to_topic(const char *topic);
 
-// publish function
+// Publish function (remains the same)
 void mqtt_comm_publish(const char *topic, const uint8_t *data, size_t len);
-
-// subscribe functions
-void mqtt_setup_and_subscribe(const char *client_id, const char *broker_ip, const char *user, const char *pass, Subscriber_Data *arguments_to_subscriber);
-
-void on_message(char* mqtt_topic, char* mqtt_msg);
 
 #endif

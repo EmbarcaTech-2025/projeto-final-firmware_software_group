@@ -26,6 +26,9 @@ extern "C" {
 // driver for the TinyGPS
 #include "include/TinyGPSPlus.h"
 
+const char* mqtt_topic_location = "bitdoglab/daltro_phone/location"; 
+const char* mqtt_topic_bitdoglab = "bitdoglab"; 
+
 TinyGPSPlus gps; // instance of the TinyGPS++ object
 
 // Global variables for suitcase's own GPS location
@@ -50,7 +53,8 @@ typedef uint8_t byte;
 #define BAUD_RATE 9600
 #define UART_ID uart1
 
-char mqtt_data_buffer[256];
+char payload_buffer[256];
+
 bool start_motor = false, stop_motor = false;
 
 enum Direction {
@@ -77,26 +81,6 @@ struct Acc {
     float x, y, z;
 };
 typedef struct Acc Acc_t;
-
-// This function manually parses only the lat/lon from a JSON string
-void parse_gps_coordinates(const char *payload) {
-    // Find the pointer to the "latitude" key in the payload string
-    const char *lat_ptr = strstr(payload, "\"latitude\":");
-    if (lat_ptr) {
-        // Read the double value that comes after the key
-        sscanf(lat_ptr, "\"latitude\":%lf", &person_lat);
-    }
-
-    // Find the pointer to the "longitude" key
-    const char *lon_ptr = strstr(payload, "\"longitude\":");
-    if (lon_ptr) {
-        // Read the double value that comes after the key
-        sscanf(lon_ptr, "\"longitude\":%lf", &person_lon);
-    }
-    
-    // Optional: Print the values to confirm they were parsed correctly
-    printf("Parsed GPS: Latitude=%.8lf, Longitude=%.8lf\n", person_lat, person_lon);
-}
 
 
 void uart_setup() {
@@ -141,111 +125,116 @@ void set_leds(uint red_signal, uint green_signal, uint blue_signal) {
 
 }
 
-void mqtt_incoming_data_cb_second_function(void *arg, const u8_t *data, u16_t len, u8_t flags) {
-    uint8_t descriptografada[101];
-    uint led_status;
 
-    memset(mqtt_data_buffer, 0, sizeof(mqtt_data_buffer));
-    memcpy(mqtt_data_buffer, data, len);
-    mqtt_data_buffer[len-1] = '\0';
+// This function manually parses only the lat/lon from a JSON string
+void parse_gps_coordinates(const char *payload) {
+    // Find the pointer to the "latitude" key in the payload string
+    const char *lat_ptr = strstr(payload, "\"latitude\":");
+    if (lat_ptr) {
+        // Read the double value that comes after the key
+        sscanf(lat_ptr, "\"latitude\":%lf", &person_lat);
+    }
 
-    // Call the GPS parsing function
-    parse_gps_coordinates(mqtt_data_buffer);
+    // Find the pointer to the "longitude" key
+    const char *lon_ptr = strstr(payload, "\"longitude\":");
+    if (lon_ptr) {
+        // Read the double value that comes after the key
+        sscanf(lon_ptr, "\"longitude\":%lf", &person_lon);
+    }
+    
+    // Optional: Print the values to confirm they were parsed correctly
+    printf("Parsed GPS: Latitude=%.8lf, Longitude=%.8lf\n", person_lat, person_lon);
 }
 
 
-void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
-    uint8_t descriptografada[101];
-    uint led_status;
 
-    memset(mqtt_data_buffer, 0, sizeof(mqtt_data_buffer));
-    memcpy(mqtt_data_buffer, data, len);
-    mqtt_data_buffer[len-1] = '\0';
-
-    // Call the GPS parsing function
-    //parse_gps_coordinates(mqtt_data_buffer);
-
-    if (with_cryptography) {
-        xor_encrypt((uint8_t *)data, descriptografada, strlen(reinterpret_cast<const char*>(data)), 42);
-        //printf("Payload: %.*s\n", len, descriptografada);
-        // on_message((char*)arg, descriptografada);
-
-
-    } else {
-        printf("Payload(*data): %s\n", data);
-        printf("mqtt_data_buffer: %s\n", mqtt_data_buffer);
-        // on_message((char*)arg, data);
-
-    }
-
+// --- Create these two NEW handler functions ---
+void handle_command_message(const char* payload) {
+    // All your logic for LEDs and manual motor control goes here
 
     // signal the leds
     uint red_led=0, green_led=0, blue_led=0;
-    if (strcmp(mqtt_data_buffer, "red_on")==0) {
+    if (strcmp(payload, "red_on")==0) {
         red_led = 1;
     } 
-    else if (strcmp(mqtt_data_buffer, "red_off")==0) {
+    else if (strcmp(payload, "red_off")==0) {
         red_led = 0;
     } 
-    else if (strcmp(mqtt_data_buffer, "green_on")==0) {
+    else if (strcmp(payload, "green_on")==0) {
         green_led = 1;
     } 
-    else if (strcmp(mqtt_data_buffer, "green_off")==0) {
+    else if (strcmp(payload, "green_off")==0) {
         green_led = 0;
     } 
-    else if (strcmp(mqtt_data_buffer, "blue_on")==0) {
+    else if (strcmp(payload, "blue_on")==0) {
         blue_led = 1;
     } 
-    else if (strcmp(mqtt_data_buffer, "blue_off")==0) {
+    else if (strcmp(payload, "blue_off")==0) {
         blue_led = 0;
     } 
     set_leds(red_led, green_led, blue_led);
 
     // control the start or stop of the motors
-    if (strcmp(mqtt_data_buffer, "start_motor") == 0 ) {
+    if (strcmp(payload, "start_motor") == 0 ) {
         start_motor = true;
     }
 
-    else if (strcmp(mqtt_data_buffer, "stop_motor") == 0) {
+    else if (strcmp(payload, "stop_motor") == 0) {
         stop_motor = true;
     }
 
 
     // control the direction of the motors
-    if (strcmp(mqtt_data_buffer, "direction_left") == 0) {
+    if (strcmp(payload, "direction_left") == 0) {
         direction_changed = true;
         direction = left;
     }
-    else if (strcmp(mqtt_data_buffer, "direction_right") == 0) {
+    else if (strcmp(payload, "direction_right") == 0) {
         direction_changed = true;
         direction = right;
     }
-    else if (strcmp(mqtt_data_buffer, "direction_forward") == 0) {
+    else if (strcmp(payload, "direction_forward") == 0) {
         direction_changed = true;
         direction = forward;
     }
-    else if (strcmp(mqtt_data_buffer, "direction_backward") == 0) {
+    else if (strcmp(payload, "direction_backward") == 0) {
         direction_changed = true;
         direction = backward;
     }
-    else if (strcmp(mqtt_data_buffer, "direction_start") == 0) {
+    else if (strcmp(payload, "direction_start") == 0) {
         direction_changed = true;
         direction = start;
     }
-    else if (strcmp(mqtt_data_buffer, "direction_stop") == 0) {
+    else if (strcmp(payload, "direction_stop") == 0) {
         direction_changed = true;
         direction = stop;
     }
-
 }
+
+
+// --- Create the NEW single "router" callback ---
+void mqtt_router_callback(const char *topic, const u8_t *data, u16_t len) {
+    // Copy payload to a null-terminated buffer
+    memset(payload_buffer, 0, sizeof(payload_buffer));
+    char payload_buffer[len + 1];
+    memcpy(payload_buffer, data, len);
+    payload_buffer[len] = '\0';
+
+    // Route the message to the correct handler based on the topic
+    if (strcmp(topic, mqtt_topic_location) == 0) {
+        parse_gps_coordinates(payload_buffer);
+    } else if (strcmp(topic, mqtt_topic_bitdoglab) == 0) {
+        handle_command_message(payload_buffer);
+    }
+}
+
 
 
 int main() {
     // variaveis de inicializacao
     uint is_subscriber = 1;
     uint is_publisher = 0;
-    const char* mqtt_topic_second_topic = "bitdoglab/daltro_phone/location"; //"bitdoglab"; 
-    const char* mqtt_topic = "bitdoglab"; // "bitdoglab/daltro_phone/location";
+
     uint xor_key = 42;
     const char *IP = "192.168.15.124";
     const char *USER = "aluno";
@@ -304,33 +293,19 @@ int main() {
     // Configura o cliente MQTT
     // Parâmetros: ID do cliente, IP do broker, usuário, senha
     if (is_subscriber) {
-        //mqtt_setup_and_subscribe("bitdog_subscriber", "192.168.151.142", "aluno", "senha123");
         strcpy(client_id, client_subscriber);
+        
+        // 1. Connect ONCE and set the router callback
+        mqtt_connect_and_set_router(client_id, IP, USER, USER_PASSWORD, mqtt_router_callback);
 
-        /*
-        Subscriber_Data arguments_to_subscriber = {
-            .function = mqtt_incoming_data_cb,
-            .mqtt_topic = (char*)mqtt_topic
-        };
+        // Wait a moment for the connection to establish before subscribing
+        sleep_ms(2000); 
 
-
-        mqtt_setup_and_subscribe(client_id, IP, USER, USER_PASSWORD, &arguments_to_subscriber);
-        */
-
-        Subscriber_Data arguments_to_subscriber_second = {
-            .function = mqtt_incoming_data_cb_second_function,
-            .mqtt_topic = (char*)mqtt_topic_second_topic
-        };
-
-
-        mqtt_setup_and_subscribe(client_id, IP, USER, USER_PASSWORD, &arguments_to_subscriber_second);
-    } 
-    if (is_publisher) {
-        //mqtt_setup_publish("bitdog_publisher", "192.168.151.142", "aluno", "senha123");
-        strcpy(client_id, client_publisher);
-        mqtt_setup_publish(client_id, IP, USER, USER_PASSWORD);
+        // 2. Subscribe to all your topics
+        mqtt_subscribe_to_topic(mqtt_topic_bitdoglab);
+        mqtt_subscribe_to_topic(mqtt_topic_location);
     }
-    
+
     // Mensagem original a ser enviada
     uint8_t mensagem[101];
 
@@ -363,35 +338,7 @@ int main() {
     max_delay_time_ms = 1000;
 
 	while(1) {
-        if (is_publisher) {
-            // Dados a serem enviados
-            float payload = 31.2;
 
-            time_t seconds = time(NULL);
-
-            sprintf(reinterpret_cast<char*>(mensagem), "{\"valor\":%.2f,\"ts\":%lu}", payload, seconds);
-            printf("Mensagem enviada: %s\n", mensagem);
-
-            // Publica a mensagem original (não criptografada)
-            //mqtt_comm_publish("escola/sala1/temperatura", mensagem, strlen(mensagem));
-            //printf("A mensagem %s foi enviada !!!\n", mensagem);
-             // Buffer para mensagem criptografada (16 bytes)
-            
-            if (with_cryptography) {
-                uint8_t criptografada[101];
-                // Criptografa a mensagem usando XOR com chave 42
-                xor_encrypt((uint8_t *)mensagem, criptografada, strlen(reinterpret_cast<const char*>(mensagem)), xor_key);
-
-                
-                // Alternativa: Publica a mensagem criptografada (atualmente comentada)
-                mqtt_comm_publish(mqtt_topic, criptografada, strlen(reinterpret_cast<const char*>(mensagem)));
-            } else {
-                mqtt_comm_publish(mqtt_topic, mensagem, strlen(reinterpret_cast<const char*>(mensagem)));
-            }
-            // wait 5 seconds before the next publishing
-            sleep_ms(5000);
-
-        }
 
         /*
 
