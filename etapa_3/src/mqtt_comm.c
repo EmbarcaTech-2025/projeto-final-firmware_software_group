@@ -1,12 +1,16 @@
+#include <string.h>
 #include "lwip/apps/mqtt.h"
 #include "include/mqtt_comm.h"
 #include "lwipopts.h"
+
+
 
 // --- Global variables for the driver ---
 static mqtt_client_t *client;
 static char current_topic[128]; // Buffer to hold the topic of the current message
 static mqtt_router_callback_t global_router_callback = NULL; // Pointer to our main router function
 
+#define MQTT_COMM_PORT 1883 // the standard is 1883
 // --- Internal LwIP Callbacks ---
 
 // This callback is triggered FIRST, giving us the topic name
@@ -62,7 +66,7 @@ void mqtt_connect_and_set_router(const char *client_id, const char *broker_ip, c
         .keep_alive = 60 // Keep alive in seconds
     };
 
-    mqtt_client_connect(client, &broker_addr, 1883, mqtt_connection_cb, NULL, &ci);
+    mqtt_client_connect(client, &broker_addr, MQTT_COMM_PORT, mqtt_connection_cb, NULL, &ci);
 }
 
 void mqtt_subscribe_to_topic(const char *topic) {

@@ -374,7 +374,7 @@ int main() {
     uint is_publisher = 0;
 
     uint xor_key = 42;
-    const char *IP = "192.168.15.124";
+    const char *IP = "192.168.15.4";
     const char *USER = "aluno";
     const char *USER_PASSWORD = "senha123";
     char client_id[31];
