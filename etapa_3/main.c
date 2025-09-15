@@ -17,6 +17,7 @@
 #include "include/mpu6050_i2c.h"
 #include "include/mqtt_comm.h"
 #include "include/wifi_conn.h"
+#include "include/xor_cipher.h"
 
 #define RED_LED 13
 #define GREEN_LED 11
@@ -24,6 +25,23 @@
 
 #define LEFT_BUTTON 6
 #define RIGHT_BUTTON 5
+
+#define UART_RX_PIN 9
+#define UART_TX_PIN 8
+#define BAUD_RATE 115200
+#define UART_ID uart1
+
+char mqtt_data_buffer[256];
+bool start_motor = false, stop_motor = false;
+
+enum Direction {
+    left, right, forward, backward, start, stop
+};
+
+enum Direction direction = stop;
+bool direction_changed = false;
+
+uint with_cryptography = 0;
 
 struct Angle {
     float x, y, z;
@@ -40,6 +58,14 @@ struct Acc {
     float x, y, z;
 };
 typedef struct Acc Acc_t;
+
+
+void uart_setup() {
+    uart_init(UART_ID, BAUD_RATE);
+
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+}
 
 
 void button_setup() {
@@ -77,10 +103,107 @@ void set_leds(uint red_signal, uint green_signal, uint blue_signal) {
 }
 
 
+void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+    uint8_t descriptografada[101];
+    uint led_status;
+
+    memset(mqtt_data_buffer, 0, sizeof(mqtt_data_buffer));
+    memcpy(mqtt_data_buffer, data, len);
+
+    if (with_cryptography) {
+        xor_encrypt((uint8_t *)data, descriptografada, strlen(data), 42);
+        //printf("Payload: %.*s\n", len, descriptografada);
+        // on_message((char*)arg, descriptografada);
+
+
+    } else {
+        printf("Payload(*data): %s\n", data);
+        printf("mqtt_data_buffer: %s\n", mqtt_data_buffer);
+        on_message((char*)arg, data);
+
+    }
+
+
+    // signal the leds
+    uint red_led=0, green_led=0, blue_led=0;
+    if (strcmp(mqtt_data_buffer, "red_on")==0) {
+        red_led = 1;
+    } 
+    else if (strcmp(mqtt_data_buffer, "red_off")==0) {
+        red_led = 0;
+    } 
+    else if (strcmp(mqtt_data_buffer, "green_on")==0) {
+        green_led = 1;
+    } 
+    else if (strcmp(mqtt_data_buffer, "green_off")==0) {
+        green_led = 0;
+    } 
+    else if (strcmp(mqtt_data_buffer, "blue_on")==0) {
+        blue_led = 1;
+    } 
+    else if (strcmp(mqtt_data_buffer, "blue_off")==0) {
+        blue_led = 0;
+    } 
+    set_leds(red_led, green_led, blue_led);
+
+    // control the start or stop of the motors
+    if (strcmp(mqtt_data_buffer, "start_motor") == 0 ) {
+        start_motor = true;
+    }
+
+    else if (strcmp(mqtt_data_buffer, "stop_motor") == 0) {
+        stop_motor = true;
+    }
+
+
+    // control the direction of the motors
+    if (strcmp(mqtt_data_buffer, "direction_left") == 0) {
+        direction_changed = true;
+        direction = left;
+    }
+    else if (strcmp(mqtt_data_buffer, "direction_right") == 0) {
+        direction_changed = true;
+        direction = right;
+    }
+    else if (strcmp(mqtt_data_buffer, "direction_forward") == 0) {
+        direction_changed = true;
+        direction = forward;
+    }
+    else if (strcmp(mqtt_data_buffer, "direction_backward") == 0) {
+        direction_changed = true;
+        direction = backward;
+    }
+    else if (strcmp(mqtt_data_buffer, "direction_start") == 0) {
+        direction_changed = true;
+        direction = start;
+    }
+    else if (strcmp(mqtt_data_buffer, "direction_stop") == 0) {
+        direction_changed = true;
+        direction = stop;
+    }
+
+}
+
+
 int main() {
-    bool green_signal = false, red_signal = false;
+    // variaveis de inicializacao
+    uint is_subscriber = 1;
+    uint is_publisher = 0;
+    const char* mqtt_topic = "bitdoglab"; 
+    // const char* mqtt_topic = "escola/sala1/temperatura";
+    uint xor_key = 42;
+    const char *IP = "192.168.15.124";
+    const char *USER = "aluno";
+    const char *USER_PASSWORD = "senha123";
+    char client_id[31];
+    char client_subscriber[] = "bitdog_subscriber";
+    char client_publisher[] = "bitdog_publisher";
+    char SSID[] = "VIVOFIBRA-5598";
+    char SSID_PASSWORD[] = "4674B29BC2";
+
+
+
     int delay_time_ms, acumulated_delay_time_ms, max_delay_time_ms;
-    int direction;
     float control_signal, control_signal_percentage;
     float magnitude;
     float limitado;
@@ -116,6 +239,34 @@ int main() {
     mpu6050_setup_i2c();
     mpu6050_reset();
 
+
+    // Conecta à rede WiFi
+    // Parâmetros: Nome da rede (SSID)R e senha
+    connect_to_wifi(SSID, SSID_PASSWORD);
+
+    // Configura o cliente MQTT
+    // Parâmetros: ID do cliente, IP do broker, usuário, senha
+    if (is_subscriber) {
+        //mqtt_setup_and_subscribe("bitdog_subscriber", "192.168.151.142", "aluno", "senha123");
+        strcpy(client_id, client_subscriber);
+
+        Subscriber_Data arguments_to_subscriber = {
+            .function = mqtt_incoming_data_cb,
+            .mqtt_topic = mqtt_topic
+        };
+
+
+        mqtt_setup_and_subscribe(client_id, IP, USER, USER_PASSWORD, &arguments_to_subscriber);
+    } 
+    if (is_publisher) {
+        //mqtt_setup_publish("bitdog_publisher", "192.168.151.142", "aluno", "senha123");
+        strcpy(client_id, client_publisher);
+        mqtt_setup_publish(client_id, IP, USER, USER_PASSWORD);
+    }
+    
+    // Mensagem original a ser enviada
+    uint8_t mensagem[101];
+
     /**
     control_signal = +0.50f * 255.0f;
     direction = control_signal > 0; // obtem direcao
@@ -124,10 +275,10 @@ int main() {
     level = (uint16_t)limitado << 8; // converte e ajusta escala
     **/
 
-    control_signal_percentage = 0.20;
+    control_signal_percentage = 0.30;
 
     control_signal = control_signal_percentage * 255.0f;
-    direction = control_signal > 0; // obtem direcao
+    // direction = control_signal > 0; // obtem direcao
     magnitude = fabsf(control_signal); // obtem modulo do sinal
     limitado = fminf(magnitude, 255.0f); // limita ao maximo de 255
     level_left = (uint16_t)limitado << 8; // converte e ajusta escala
@@ -135,7 +286,7 @@ int main() {
     offset = 30; // in percentage
     //control_signal = control_signal_percentage*(1-offset/100.0) * 255.0f;
     control_signal = control_signal_percentage * 255.0f;
-    direction = control_signal > 0; // obtem direcao
+    // direction = control_signal > 0; // obtem direcao
     magnitude = fabsf(control_signal); // obtem modulo do sinal
     limitado = fminf(magnitude, 255.0f); // limita ao maximo de 255
     level_right = (uint16_t)limitado << 8; // converte e ajusta escala
@@ -145,6 +296,37 @@ int main() {
     max_delay_time_ms = 1000;
 
 	while(1) {
+        if (is_publisher) {
+            // Dados a serem enviados
+            float payload = 31.2;
+
+            time_t seconds = time(NULL);
+
+            sprintf(mensagem, "{\"valor\":%.2f,\"ts\":%lu}", payload, seconds);
+            printf("Mensagem enviada: %s\n", mensagem);
+
+            // Publica a mensagem original (não criptografada)
+            //mqtt_comm_publish("escola/sala1/temperatura", mensagem, strlen(mensagem));
+            //printf("A mensagem %s foi enviada !!!\n", mensagem);
+             // Buffer para mensagem criptografada (16 bytes)
+            
+            if (with_cryptography) {
+                uint8_t criptografada[101];
+                // Criptografa a mensagem usando XOR com chave 42
+                xor_encrypt((uint8_t *)mensagem, criptografada, strlen(mensagem), xor_key);
+
+                
+                // Alternativa: Publica a mensagem criptografada (atualmente comentada)
+                mqtt_comm_publish(mqtt_topic, criptografada, strlen(mensagem));
+            } else {
+                mqtt_comm_publish(mqtt_topic, mensagem, strlen(mensagem));
+            }
+            // wait 5 seconds before the next publishing
+            sleep_ms(5000);
+
+        }
+
+
 
         // control for the direction using the accelerometer/gyroscope
         mpu6050_read_raw(accel_raw, gyro_raw, &temp);
@@ -186,28 +368,56 @@ int main() {
         */
 
         // right button start the motors
-        if (!gpio_get(RIGHT_BUTTON)) {
+        if (!gpio_get(RIGHT_BUTTON) || start_motor) {
             printf("right button pressed!\n");
-            green_signal = true;
-            red_signal = false;
+            start_motor = false;
+            stop_motor = false;
             set_leds( 0, 1, 0);
-            motor_set_left_level(level_left, direction);
-            motor_set_right_level(level_right, direction);
+            motor_set_left_level(level_left, 1);
+            motor_set_right_level(level_right, 1);
 
             printf("the level left is %d\n", level_left);
             printf("the level right is %d\n", level_right);
         }
 
         // left button stop the motors
-        if (!gpio_get(LEFT_BUTTON)) {
+        if (!gpio_get(LEFT_BUTTON) || stop_motor) {
             printf("left button pressed!\n");
-            green_signal = false;
-            red_signal = true;
+            start_motor = false;
+            stop_motor = false;;
             set_leds( 1, 0, 0);
-            motor_set_left_level(0, direction);
-            motor_set_right_level(0, direction);
+            motor_set_left_level(0, 1);
+            motor_set_right_level(0, 1);
         }
 
+        if (direction_changed) {
+            direction_changed = false;
+
+            if (direction == left) {
+                motor_set_right_level(level_right, 0);
+                motor_set_left_level(level_left, 1);
+            }
+            else if (direction == right) {
+                motor_set_right_level(level_right, 1);
+                motor_set_left_level(level_left, 0);
+            }
+            else if (direction == forward) {
+                motor_set_right_level(level_right, 1);
+                motor_set_left_level(level_left, 1);
+            }
+            else if (direction == backward) {
+                motor_set_right_level(level_right, 0);
+                motor_set_left_level(level_left, 0);
+            }
+            else if (direction == start) {
+                motor_set_right_level(level_right, 1);
+                motor_set_left_level(level_left, 1);
+            }
+             else if (direction == stop) {
+                motor_set_right_level(0, 1);
+                motor_set_left_level(0, 1);
+            }
+        }
         sleep_ms(delay_time_ms);
 
         acumulated_delay_time_ms+=delay_time_ms;

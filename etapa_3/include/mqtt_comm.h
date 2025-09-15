@@ -18,5 +18,6 @@ void mqtt_comm_publish(const char *topic, const uint8_t *data, size_t len);
 // subscribe functions
 void mqtt_setup_and_subscribe(const char *client_id, const char *broker_ip, const char *user, const char *pass, Subscriber_Data *arguments_to_subscriber);
 
+void on_message(char* mqtt_topic, char* mqtt_msg);
 
 #endif

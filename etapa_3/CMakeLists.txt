@@ -43,6 +43,7 @@ add_executable( ${ProjectName}
   src/mpu6050_i2c.c
   src/mqtt_comm.c
   src/wifi_conn.c
+  src/xor_cipher.c
 )
 
 
