@@ -119,4 +119,14 @@
 #define MPU9250_GYRO_FS_1000DPS  32.8f
 #define MPU9250_GYRO_FS_2000DPS  16.4f
 
+
+// Magnetometer (AK8963) I2C address
+#define AK8963_I2C_ADDRESS     _u(0x0C)
+
+// Magnetometer (AK8963) register map
+#define AK8963_REG_WIA         _u(0x00) // Who Am I
+#define AK8963_REG_HXL         _u(0x03) // X-axis data
+#define AK8963_REG_ST2         _u(0x09) // Status 2 (data overflow)
+#define AK8963_REG_CNTL1       _u(0x0A) // Control 1
+
 #endif

@@ -23,4 +23,8 @@ extern void mpu9250_read_accel_raw(i2c_inst_t* i2c, int16_t accel[3]);
 extern void mpu9250_read_gyro_raw(i2c_inst_t* i2c, int16_t gyro[3]);
 extern void mpu9250_read_temp_raw(i2c_inst_t* i2c, int16_t* temp);
 
+
+extern void mpu9250_init_mag(i2c_inst_t* i2c);
+extern void mpu9250_read_mag_raw(i2c_inst_t* i2c, int16_t mag[3]);
+
 #endif

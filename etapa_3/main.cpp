@@ -57,6 +57,123 @@ char payload_buffer[256];
 
 bool start_motor = false, stop_motor = false;
 
+// Define the I2C port and pins at the top of your file
+#define I2C_PORT i2c0
+#define I2C_SDA_PIN 0
+#define I2C_SCL_PIN 1
+
+void setup_compass() {
+    i2c_init(I2C_PORT, 400 * 1000); // Initialize I2C at 400kHz
+    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C); // Assumes SDA on GPIO 0
+    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C); // Assumes SCL on GPIO 1
+    gpio_pull_up(I2C_SDA_PIN);
+    gpio_pull_up(I2C_SCL_PIN);
+    
+    // Reset the MPU9250 and initialize the magnetometer
+    mpu9250_reset(i2c0);
+    mpu9250_init_mag(i2c0);
+
+    printf("MPU9250 Compass Initialized.\n");
+}
+
+float read_compass_heading() {
+    int16_t mag_raw[3];
+    mpu9250_read_mag_raw(i2c0, mag_raw);
+
+    // --- PLACEHOLDER CALIBRATION VALUES ---
+    // You MUST replace these with your own calibration data!
+    float mag_x_offset = 15.5; 
+    float mag_y_offset = 52.0;
+
+    // Apply calibration offset
+    float mx = (float)mag_raw[0] - mag_x_offset;
+    float my = (float)mag_raw[1] - mag_y_offset;
+    
+    // Calculate the heading in radians
+    float heading_rad = atan2(my, mx);
+
+    // Convert radians to degrees
+    float heading_deg = heading_rad * 180.0 / M_PI;
+
+    // --- MAGNETIC DECLINATION ---
+    // This is for Brasília. Find the value for your location.
+    float declination_angle = -21.4;
+    heading_deg += declination_angle;
+
+    // Normalize to 0-360 degrees
+    if (heading_deg < 0) {
+        heading_deg += 360;
+    }
+
+    return heading_deg;
+}
+
+// Reads from UART and feeds the GPS library
+void read_suitcase_gps_task() {
+    while (uart_is_readable(UART_ID)) {
+        gps.encode(uart_getc(UART_ID));
+    }
+    // Update global variables if the location has changed
+    if (gps.location.isUpdated()) {
+        suitcase_lat = gps.location.lat();
+        suitcase_lon = gps.location.lng();
+    }
+}
+
+// The main "follow-me" logic function
+void follow_me_logic() {
+    // Only run if we have a valid GPS fix for the suitcase and have received the person's location
+    if (!gps.location.isValid() || person_lat == 0.0) {
+        printf("Waiting for valid GPS fix for suitcase and person...\n");
+        motor_set_left_level(0, 1); // Stop motors
+        motor_set_right_level(0, 1);
+        return;
+    }
+
+    // Calculate distance and the direction we need to go
+    double distance_to_person = TinyGPSPlus::distanceBetween(suitcase_lat, suitcase_lon, person_lat, person_lon);
+    double target_bearing = TinyGPSPlus::courseTo(suitcase_lat, suitcase_lon, person_lat, person_lon);
+    
+    // Find out which way we are currently facing using the UNCALIBRATED compass
+    float current_heading = read_compass_heading();
+
+    // Calculate the difference between where we want to go and where we are facing
+    float heading_error = target_bearing - current_heading;
+
+    // Normalize the error to be between -180 and 180 degrees
+    if (heading_error > 180)  heading_error -= 360;
+    if (heading_error < -180) heading_error += 360;
+
+    printf("Dist:%.1fm, Target:%.1f, Current:%.1f, Err:%.1f\n", distance_to_person, target_bearing, current_heading, heading_error);
+
+    // --- Motor Control Decision Logic ---
+    uint16_t turn_speed = 16384; // Approx 25% speed for turning
+    uint16_t move_speed = 32768; // Approx 50% speed for moving forward
+    
+    // If we are pointing in the wrong direction, prioritize turning
+    if (abs(heading_error) > 25.0) { // Use a wider tolerance (25 degrees) for uncalibrated sensor
+        if (heading_error > 0) {
+            // Turn Right (left motor forward, right motor backward)
+            motor_set_left_level(turn_speed, 1); 
+            motor_set_right_level(turn_speed, 0);
+        } else {
+            // Turn Left (left motor backward, right motor forward)
+            motor_set_left_level(turn_speed, 0); 
+            motor_set_right_level(turn_speed, 1);
+        }
+    }
+    // If we are facing the right way, decide whether to move or stop
+    else {
+        if (distance_to_person > 4.0) { // If person is more than 4m away
+            motor_set_left_level(move_speed, 1); // Move forward
+            motor_set_right_level(move_speed, 1);
+        } else {
+            motor_set_left_level(0, 1); // Stop
+            motor_set_right_level(0, 1);
+        }
+    }
+}
+
 enum Direction {
     left, right, forward, backward, start, stop
 };
@@ -285,6 +402,7 @@ int main() {
     // setup and enable the mpu6050
     // mpu6050_setup_i2c();
     // mpu6050_reset();
+    setup_compass();
 
     // Conecta à rede WiFi
     // Parâmetros: Nome da rede (SSID)R e senha
@@ -448,6 +566,42 @@ int main() {
 
         }
         */
+
+
+        // read the values from the magnetometer
+         int16_t mag_raw[3]; // X, Y, Z
+        mpu9250_read_mag_raw(I2C_PORT, mag_raw);
+
+        // Print the raw values from the magnetometer
+        printf("Raw Mag -> X: %d, Y: %d, Z: %d\n", mag_raw[0], mag_raw[1], mag_raw[2]);
+        
+        //sleep_ms(250);
+
+        // Always read the latest data from the suitcase's GPS module
+        read_suitcase_gps_task();
+
+        // Check for manual start/stop commands from buttons or MQTT
+        if (!gpio_get(RIGHT_BUTTON) || start_motor) {
+            start_motor = true;
+            stop_motor = false;
+            set_leds(0, 1, 0); // Green light for "GO"
+        }
+        if (!gpio_get(LEFT_BUTTON) || stop_motor) {
+            start_motor = false;
+            stop_motor = true;
+            set_leds(1, 0, 0); // Red light for "STOP"
+        }
+
+        // Run the main decision-making logic ONLY if in "start" mode
+        if (start_motor && !stop_motor) {
+            follow_me_logic();
+        } else {
+            // If in stop mode, make sure motors are off
+            motor_set_left_level(0, 1);
+            motor_set_right_level(0, 1);
+        }
+
+        sleep_ms(100); // Main loop delay
         
     }
 

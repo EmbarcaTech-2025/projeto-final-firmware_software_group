@@ -110,3 +110,34 @@ void mpu9250_read_temp_raw(i2c_inst_t* i2c, int16_t* temp) {
   // Concatenate 2 8-bit values into 1 16-bit value.
   *temp = buffer[0] << 8 + buffer[1];
 }
+
+// Initializes the MPU9250 to allow I2C bypass to the magnetometer
+void mpu9250_init_mag(i2c_inst_t* i2c) {
+    // Enable I2C bypass to access the magnetometer
+    mpu9250_write_byte(i2c, MPU9250_REG_INT_PIN_CFG, 0x02);
+    sleep_ms(10);
+    
+    // Set magnetometer to continuous measurement mode 1 (8Hz, 16-bit)
+    uint8_t buffer[2] = {AK8963_REG_CNTL1, 0x12};
+    i2c_write_blocking(i2c, AK8963_I2C_ADDRESS, buffer, 2, false);
+    sleep_ms(10);
+}
+
+// Reads raw magnetometer values
+void mpu9250_read_mag_raw(i2c_inst_t* i2c, int16_t mag[3]) {
+    uint8_t buffer[7];
+    uint8_t reg = AK8963_REG_HXL;
+
+    // Read 7 bytes of data (X, Y, Z + status)
+    i2c_write_blocking(i2c, AK8963_I2C_ADDRESS, &reg, 1, true);
+    i2c_read_blocking(i2c, AK8963_I2C_ADDRESS, buffer, 7, false);
+
+    // Check if data was read correctly (no overflow)
+    if (!(buffer[6] & 0x08)) {
+        // Combine the low and high bytes for each axis (little-endian)
+        mag[0] = (buffer[1] << 8) | buffer[0]; // X-axis
+        mag[1] = (buffer[3] << 8) | buffer[2]; // Y-axis
+        mag[2] = (buffer[5] << 8) | buffer[4]; // Z-axis
+    }
+}
+
