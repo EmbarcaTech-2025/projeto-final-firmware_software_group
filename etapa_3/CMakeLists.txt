@@ -38,12 +38,14 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 add_executable( ${ProjectName}
-  main.c
+  main.cpp
   src/motor.c
-  src/mpu6050_i2c.c
+  # src/mpu6050_i2c.c
+  src/mpu9250_i2c.c
   src/mqtt_comm.c
   src/wifi_conn.c
   src/xor_cipher.c
+  src/TinyGPS++.cpp
 )
 
 
@@ -70,6 +72,7 @@ target_link_libraries(${ProjectName}
         hardware_clocks
         hardware_timer
         hardware_i2c
+        hardware_uart
 
         # wifi libraries  
         # Oferece suporte Wi-Fi (CYW43) com LwIP (pilha TCP/IP) em um modo thread-safe em segundo plano.

@@ -11,13 +11,32 @@
 #include "hardware/pwm.h"
 #include "hardware/timer.h"
 #include "hardware/i2c.h"
+#include "hardware/uart.h"
 
 // driver for the motor (h bridge tb6612fng)
-#include "include/motor.h"
-#include "include/mpu6050_i2c.h"
-#include "include/mqtt_comm.h"
-#include "include/wifi_conn.h"
-#include "include/xor_cipher.h"
+extern "C" {
+    #include "include/motor.h"
+    //#include "include/mpu6050_i2c.h"
+    #include "include/mpu9250_i2c.h"
+    #include "include/mqtt_comm.h"
+    #include "include/wifi_conn.h"
+    #include "include/xor_cipher.h"
+}
+
+// driver for the TinyGPS
+#include "include/TinyGPSPlus.h"
+
+TinyGPSPlus gps; // instance of the TinyGPS++ object
+
+// Global variables for suitcase's own GPS location
+double suitcase_lat = 0.0;
+double suitcase_lon = 0.0;
+
+// Global variables to be updated by MQTT with the person's location
+volatile double person_lat = 0.0;
+volatile double person_lon = 0.0;
+
+typedef uint8_t byte;
 
 #define RED_LED 13
 #define GREEN_LED 11
@@ -28,7 +47,7 @@
 
 #define UART_RX_PIN 9
 #define UART_TX_PIN 8
-#define BAUD_RATE 115200
+#define BAUD_RATE 9600
 #define UART_ID uart1
 
 char mqtt_data_buffer[256];
@@ -58,6 +77,26 @@ struct Acc {
     float x, y, z;
 };
 typedef struct Acc Acc_t;
+
+// This function manually parses only the lat/lon from a JSON string
+void parse_gps_coordinates(const char *payload) {
+    // Find the pointer to the "latitude" key in the payload string
+    const char *lat_ptr = strstr(payload, "\"latitude\":");
+    if (lat_ptr) {
+        // Read the double value that comes after the key
+        sscanf(lat_ptr, "\"latitude\":%lf", &person_lat);
+    }
+
+    // Find the pointer to the "longitude" key
+    const char *lon_ptr = strstr(payload, "\"longitude\":");
+    if (lon_ptr) {
+        // Read the double value that comes after the key
+        sscanf(lon_ptr, "\"longitude\":%lf", &person_lon);
+    }
+    
+    // Optional: Print the values to confirm they were parsed correctly
+    printf("Parsed GPS: Latitude=%.8lf, Longitude=%.8lf\n", person_lat, person_lon);
+}
 
 
 void uart_setup() {
@@ -102,6 +141,18 @@ void set_leds(uint red_signal, uint green_signal, uint blue_signal) {
 
 }
 
+void mqtt_incoming_data_cb_second_function(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+    uint8_t descriptografada[101];
+    uint led_status;
+
+    memset(mqtt_data_buffer, 0, sizeof(mqtt_data_buffer));
+    memcpy(mqtt_data_buffer, data, len);
+    mqtt_data_buffer[len-1] = '\0';
+
+    // Call the GPS parsing function
+    parse_gps_coordinates(mqtt_data_buffer);
+}
+
 
 void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
     uint8_t descriptografada[101];
@@ -109,9 +160,13 @@ void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
 
     memset(mqtt_data_buffer, 0, sizeof(mqtt_data_buffer));
     memcpy(mqtt_data_buffer, data, len);
+    mqtt_data_buffer[len-1] = '\0';
+
+    // Call the GPS parsing function
+    //parse_gps_coordinates(mqtt_data_buffer);
 
     if (with_cryptography) {
-        xor_encrypt((uint8_t *)data, descriptografada, strlen(data), 42);
+        xor_encrypt((uint8_t *)data, descriptografada, strlen(reinterpret_cast<const char*>(data)), 42);
         //printf("Payload: %.*s\n", len, descriptografada);
         // on_message((char*)arg, descriptografada);
 
@@ -119,7 +174,7 @@ void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
     } else {
         printf("Payload(*data): %s\n", data);
         printf("mqtt_data_buffer: %s\n", mqtt_data_buffer);
-        on_message((char*)arg, data);
+        // on_message((char*)arg, data);
 
     }
 
@@ -189,8 +244,8 @@ int main() {
     // variaveis de inicializacao
     uint is_subscriber = 1;
     uint is_publisher = 0;
-    const char* mqtt_topic = "bitdoglab"; 
-    // const char* mqtt_topic = "escola/sala1/temperatura";
+    const char* mqtt_topic_second_topic = "bitdoglab/daltro_phone/location"; //"bitdoglab"; 
+    const char* mqtt_topic = "bitdoglab"; // "bitdoglab/daltro_phone/location";
     uint xor_key = 42;
     const char *IP = "192.168.15.124";
     const char *USER = "aluno";
@@ -225,6 +280,9 @@ int main() {
     sleep_ms(3000);
     printf("Welcome to the binary world!\n");
 
+    // setup the gps using uart
+    uart_setup();
+
     // setup the buttons
     button_setup();
 
@@ -236,9 +294,8 @@ int main() {
     motor_enable();
 
     // setup and enable the mpu6050
-    mpu6050_setup_i2c();
-    mpu6050_reset();
-
+    // mpu6050_setup_i2c();
+    // mpu6050_reset();
 
     // Conecta à rede WiFi
     // Parâmetros: Nome da rede (SSID)R e senha
@@ -250,13 +307,23 @@ int main() {
         //mqtt_setup_and_subscribe("bitdog_subscriber", "192.168.151.142", "aluno", "senha123");
         strcpy(client_id, client_subscriber);
 
+        /*
         Subscriber_Data arguments_to_subscriber = {
             .function = mqtt_incoming_data_cb,
-            .mqtt_topic = mqtt_topic
+            .mqtt_topic = (char*)mqtt_topic
         };
 
 
         mqtt_setup_and_subscribe(client_id, IP, USER, USER_PASSWORD, &arguments_to_subscriber);
+        */
+
+        Subscriber_Data arguments_to_subscriber_second = {
+            .function = mqtt_incoming_data_cb_second_function,
+            .mqtt_topic = (char*)mqtt_topic_second_topic
+        };
+
+
+        mqtt_setup_and_subscribe(client_id, IP, USER, USER_PASSWORD, &arguments_to_subscriber_second);
     } 
     if (is_publisher) {
         //mqtt_setup_publish("bitdog_publisher", "192.168.151.142", "aluno", "senha123");
@@ -302,7 +369,7 @@ int main() {
 
             time_t seconds = time(NULL);
 
-            sprintf(mensagem, "{\"valor\":%.2f,\"ts\":%lu}", payload, seconds);
+            sprintf(reinterpret_cast<char*>(mensagem), "{\"valor\":%.2f,\"ts\":%lu}", payload, seconds);
             printf("Mensagem enviada: %s\n", mensagem);
 
             // Publica a mensagem original (não criptografada)
@@ -313,20 +380,20 @@ int main() {
             if (with_cryptography) {
                 uint8_t criptografada[101];
                 // Criptografa a mensagem usando XOR com chave 42
-                xor_encrypt((uint8_t *)mensagem, criptografada, strlen(mensagem), xor_key);
+                xor_encrypt((uint8_t *)mensagem, criptografada, strlen(reinterpret_cast<const char*>(mensagem)), xor_key);
 
                 
                 // Alternativa: Publica a mensagem criptografada (atualmente comentada)
-                mqtt_comm_publish(mqtt_topic, criptografada, strlen(mensagem));
+                mqtt_comm_publish(mqtt_topic, criptografada, strlen(reinterpret_cast<const char*>(mensagem)));
             } else {
-                mqtt_comm_publish(mqtt_topic, mensagem, strlen(mensagem));
+                mqtt_comm_publish(mqtt_topic, mensagem, strlen(reinterpret_cast<const char*>(mensagem)));
             }
             // wait 5 seconds before the next publishing
             sleep_ms(5000);
 
         }
 
-
+        /*
 
         // control for the direction using the accelerometer/gyroscope
         mpu6050_read_raw(accel_raw, gyro_raw, &temp);
@@ -337,11 +404,7 @@ int main() {
             gyro[i] = (float)gyro_raw[i] / 131.0f;
             //angles[i] = (180*asinf(accel[i]))/M_PI;
         }
-        /**
-        angle.x = angles[0];
-        angle.y = angles[1];
-        angle.z = angles[2];
-        **/
+
 
         accelerometer.x = accel[0]; 
         accelerometer.y = accel[1]; 
