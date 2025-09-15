@@ -275,7 +275,7 @@ int main() {
     level = (uint16_t)limitado << 8; // converte e ajusta escala
     **/
 
-    control_signal_percentage = 0.30;
+    control_signal_percentage = 0.40;
 
     control_signal = control_signal_percentage * 255.0f;
     // direction = control_signal > 0; // obtem direcao
