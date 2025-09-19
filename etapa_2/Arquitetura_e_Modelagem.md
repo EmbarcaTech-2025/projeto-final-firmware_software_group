@@ -10,7 +10,7 @@ Apresentar a proposta de arquitetura do sistema, incluindo o diagrama de hardwar
 
 ## Diagrama de Blocos para Mala Autônoma
 
-[Diagrama de Blocos](blocos_funcionais.jpg)
+![Diagrama de Blocos](blocos_funcionais.jpg)
 
 ### Visão Geral
 O projeto de mala autônoma utiliza a placa BitDogLab com uma Raspberry Pi Pico W como controlador central. Uma segunda Raspberry Pi Pico W lida com a detecção de identidade baseada em câmera usando TinyML.
