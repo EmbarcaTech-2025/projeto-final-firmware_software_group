@@ -38,7 +38,7 @@ O projeto de mala autônoma utiliza a placa BitDogLab com uma Raspberry Pi Pico 
 - I2C para comunicação e configuração de vários sensores.
 
 ## Diagrama de Hardware para Mala Autônoma
-![diagrama de hardware][smart_suitcase_fritzing.jpg]
+![diagrama de hardware](smart_suitcase_fritzing.jpg)
 ![diagrama de hardware](diagrama_de_hardware.jpg)
 
 ### Visão Geral
